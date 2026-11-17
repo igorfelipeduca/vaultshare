@@ -31,12 +31,29 @@ test('fileMeta matches the row format', () => {
 })
 
 test('linkRules lists only the active rules', () => {
-  const base = { id: '1', fileId: 'f', fileName: 'a', url: 'u', createdAt: ago(0), expiresAt: null, hasPassword: false, readOnly: false, accessCount: 0 }
-  const labels = (link: typeof base | (Omit<typeof base, 'expiresAt'> & { expiresAt: string })) => linkRules(link, now).map((rule) => rule.label)
-  assert.deepEqual(labels({ ...base, expiresAt: new Date(now + 7 * DAY).toISOString(), hasPassword: true }), ['Expira em 7 dias', 'Senha ativa'])
+  const base = {
+    id: '1',
+    fileId: 'f',
+    fileName: 'a',
+    url: 'u',
+    createdAt: ago(0),
+    expiresAt: null,
+    hasPassword: false,
+    readOnly: false,
+    accessCount: 0,
+  }
+  const labels = (link: typeof base | (Omit<typeof base, 'expiresAt'> & { expiresAt: string })) =>
+    linkRules(link, now).map((rule) => rule.label)
+  assert.deepEqual(labels({ ...base, expiresAt: new Date(now + 7 * DAY).toISOString(), hasPassword: true }), [
+    'Expira em 7 dias',
+    'Senha ativa',
+  ])
   assert.deepEqual(labels({ ...base, readOnly: true, accessCount: 3 }), ['Somente leitura', '3 acessos'])
   assert.deepEqual(labels({ ...base, expiresAt: new Date(now - DAY).toISOString() }), ['Expirado'])
-  assert.deepEqual(labels({ ...base, expiresAt: new Date(now + DAY).toISOString(), accessCount: 1 }), ['Expira em 1 dia', '1 acesso'])
+  assert.deepEqual(labels({ ...base, expiresAt: new Date(now + DAY).toISOString(), accessCount: 1 }), [
+    'Expira em 1 dia',
+    '1 acesso',
+  ])
   assert.deepEqual(labels(base), ['Acesso livre'])
 })
 

@@ -5,11 +5,11 @@
   --shift: 8px;
   --press: 0.96;
   --nav-item: 40px;
-  --font-display: 'Bricolage Grotesque Variable', 'Inter Variable', system-ui, sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-display: "Bricolage Grotesque Variable", "Inter Variable", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
-:root[data-theme='dark'] {
+:root[data-theme="dark"] {
   color-scheme: dark;
   --bg-page: #0a0e14;
   --bg-sidebar: #0d131c;
@@ -32,6 +32,8 @@
   --blue: #6ba3ff;
   --slate: #9aaec5;
   --error: #ff9d9d;
+  --error-fill: #b42318;
+  --error-fill-dark: #912018;
   --scrim: rgb(5 7 11 / 0.66);
   --tint: 16%;
   --shadow-card: 0 0 0 1px var(--border), inset 0 1px 0 rgb(255 255 255 / 0.03), 0 8px 24px -16px rgb(0 0 0 / 0.7);
@@ -47,7 +49,7 @@
   --dial-knurl: #3a4c65;
 }
 
-:root[data-theme='light'] {
+:root[data-theme="light"] {
   color-scheme: light;
   --bg-page: #f3f5f9;
   --bg-sidebar: #ffffff;
@@ -70,6 +72,8 @@
   --blue: #1d55d0;
   --slate: #4f6074;
   --error: #b42318;
+  --error-fill: #b42318;
+  --error-fill-dark: #912018;
   --scrim: rgb(15 26 42 / 0.42);
   --tint: 11%;
   --shadow-card: 0 0 0 1px var(--border), 0 1px 2px rgb(15 26 42 / 0.04), 0 10px 24px -18px rgb(15 26 42 / 0.25);
@@ -93,6 +97,7 @@
 
 html {
   background: var(--bg-page);
+  scroll-padding-top: 16px;
   scrollbar-color: var(--border-input) transparent;
 }
 
@@ -101,7 +106,7 @@ body {
   background: var(--bg-page);
   color: var(--text);
   caret-color: var(--accent-text);
-  font-family: 'Inter Variable', Inter, system-ui, sans-serif;
+  font-family: "Inter Variable", Inter, system-ui, sans-serif;
   font-size: 0.875rem;
   line-height: 1.4;
   -webkit-font-smoothing: antialiased;
@@ -329,11 +334,15 @@ main:focus {
   color: var(--muted);
   font-weight: 500;
   text-decoration: none;
-  transition: color 160ms ease, background-color 160ms ease;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
 }
 
 .nav-item svg {
-  transition: color 160ms ease, translate 200ms var(--ease-out);
+  transition:
+    color 160ms ease,
+    translate 200ms var(--ease-out);
 }
 
 .nav-item:hover {
@@ -345,12 +354,12 @@ main:focus {
   translate: 2px 0;
 }
 
-.nav-item[aria-current='page'] {
+.nav-item[aria-current="page"] {
   background: none;
   color: var(--text);
 }
 
-.nav-item[aria-current='page'] svg {
+.nav-item[aria-current="page"] svg {
   color: var(--accent-text);
   translate: 0;
 }
@@ -403,12 +412,16 @@ main:focus {
   background: var(--bg-input);
   box-shadow: inset 0 0 0 1px var(--border-input);
   color: var(--muted);
-  transition: box-shadow 180ms ease, background-color 180ms ease;
+  transition:
+    box-shadow 180ms ease,
+    background-color 180ms ease;
 }
 
 .search:focus-within {
   background: var(--bg-card);
-  box-shadow: inset 0 0 0 1px var(--accent-text), 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow:
+    inset 0 0 0 1px var(--accent-text),
+    0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .search input {
@@ -456,7 +469,9 @@ main:focus {
   background: var(--bg-card);
   box-shadow: 0 0 0 1px var(--border);
   color: var(--text);
-  transition: background-color 160ms ease, scale 140ms ease;
+  transition:
+    background-color 160ms ease,
+    scale 140ms ease;
 }
 
 .icon-button:hover {
@@ -479,11 +494,14 @@ main:focus {
 /* Both icons stay in the DOM and cross-fade when the theme changes. */
 .theme-toggle svg {
   position: absolute;
-  transition: opacity 280ms cubic-bezier(0.2, 0, 0, 1), scale 280ms cubic-bezier(0.2, 0, 0, 1), filter 280ms cubic-bezier(0.2, 0, 0, 1);
+  transition:
+    opacity 280ms cubic-bezier(0.2, 0, 0, 1),
+    scale 280ms cubic-bezier(0.2, 0, 0, 1),
+    filter 280ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-.theme-toggle[data-theme-icon='dark'] .theme-moon,
-.theme-toggle[data-theme-icon='light'] .theme-sun {
+.theme-toggle[data-theme-icon="dark"] .theme-moon,
+.theme-toggle[data-theme-icon="light"] .theme-sun {
   opacity: 0;
   scale: 0.25;
   filter: blur(4px);
@@ -560,7 +578,12 @@ main:focus {
   scale: 0.97;
   translate: 0 calc(var(--shift) * -1);
   transform-origin: top right;
-  transition: opacity 160ms ease, scale 160ms ease, translate 160ms ease, display 160ms allow-discrete, overlay 160ms allow-discrete;
+  transition:
+    opacity 160ms ease,
+    scale 160ms ease,
+    translate 160ms ease,
+    display 160ms allow-discrete,
+    overlay 160ms allow-discrete;
 }
 
 .notifications:popover-open {
@@ -630,7 +653,10 @@ h1 {
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
-  transition: background-color 160ms ease, box-shadow 200ms ease, scale 140ms ease;
+  transition:
+    background-color 160ms ease,
+    box-shadow 200ms ease,
+    scale 140ms ease;
 }
 
 .button:active:not(:disabled) {
@@ -681,7 +707,9 @@ h1 {
   color: var(--accent-text);
   font-size: 0.8125rem;
   font-weight: 600;
-  transition: background-color 160ms ease, scale 140ms ease;
+  transition:
+    background-color 160ms ease,
+    scale 140ms ease;
 }
 
 .text-button:hover {
@@ -693,12 +721,24 @@ h1 {
 }
 
 /* Icon tiles: one tint per meaning, shared by files, events and metrics. */
-.tone-rose { --tone: var(--rose); }
-.tone-violet { --tone: var(--violet); }
-.tone-amber { --tone: var(--amber); }
-.tone-blue { --tone: var(--blue); }
-.tone-green { --tone: var(--green); }
-.tone-slate { --tone: var(--slate); }
+.tone-rose {
+  --tone: var(--rose);
+}
+.tone-violet {
+  --tone: var(--violet);
+}
+.tone-amber {
+  --tone: var(--amber);
+}
+.tone-blue {
+  --tone: var(--blue);
+}
+.tone-green {
+  --tone: var(--green);
+}
+.tone-slate {
+  --tone: var(--slate);
+}
 
 .tile {
   display: flex;
@@ -730,10 +770,14 @@ h1 {
 
 /* Concentric rings radiating from the dial, like the machined face of a vault door. */
 .hero::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
-  background: repeating-radial-gradient(circle at calc(100% - 170px) 50%, transparent 0 27px, var(--hero-ring) 27px 28px);
+  background: repeating-radial-gradient(
+    circle at calc(100% - 170px) 50%,
+    transparent 0 27px,
+    var(--hero-ring) 27px 28px
+  );
   mask-image: radial-gradient(560px 560px at calc(100% - 170px) 50%, #000 30%, transparent 80%);
   pointer-events: none;
 }
@@ -771,7 +815,7 @@ h1 {
 }
 
 .pulse::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   border-radius: 50%;
@@ -1004,7 +1048,7 @@ h1 {
 }
 
 .event:not(:last-child)::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   bottom: -50%;
@@ -1056,7 +1100,10 @@ h1 {
   font-weight: 500;
   text-align: left;
   text-decoration: none;
-  transition: background-color 160ms ease, box-shadow 160ms ease, scale 140ms ease;
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    scale 140ms ease;
 }
 
 .quick-action > svg:first-child {
@@ -1077,7 +1124,9 @@ h1 {
   color: var(--muted);
   opacity: 0;
   translate: -6px 0;
-  transition: opacity 160ms ease, translate 220ms var(--ease-out);
+  transition:
+    opacity 160ms ease,
+    translate 220ms var(--ease-out);
 }
 
 .quick-action:hover .quick-arrow,
@@ -1103,7 +1152,11 @@ h1 {
   color: var(--muted);
   font-size: 0.8125rem;
   font-weight: 500;
-  transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease, scale 140ms ease;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    scale 140ms ease;
 }
 
 .chip:hover {
@@ -1114,7 +1167,7 @@ h1 {
   scale: var(--press);
 }
 
-.chip[aria-pressed='true'] {
+.chip[aria-pressed="true"] {
   background: color-mix(in srgb, var(--accent) 16%, var(--bg-card));
   box-shadow: inset 0 0 0 1px var(--accent);
   color: var(--text);
@@ -1254,10 +1307,13 @@ h1 {
   color: var(--amber);
 }
 
+/* Secure slugs are long (22 chars): the address shrinks and ends in an ellipsis instead of squeezing the file name.
+   The full URL is still in the DOM, in the title tooltip and in what "Copiar" copies. */
 .link-address {
   display: flex;
-  flex-shrink: 0;
+  flex: 0 1 360px;
   align-items: center;
+  min-width: 0;
   gap: 4px;
   max-width: 100%;
   padding: 4px 4px 4px 13px;
@@ -1267,11 +1323,14 @@ h1 {
 }
 
 .link-url {
+  flex: 1;
   min-width: 0;
+  overflow: hidden;
   color: var(--muted);
   font-family: var(--font-mono);
   font-size: 0.8125rem;
-  overflow-wrap: anywhere;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .copy-button {
@@ -1290,7 +1349,10 @@ h1 {
   color: var(--accent-text);
   font-size: 0.8125rem;
   font-weight: 600;
-  transition: color 160ms ease, background-color 160ms ease, scale 140ms ease;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    scale 140ms ease;
 }
 
 .copy-button:hover {
@@ -1314,7 +1376,10 @@ h1 {
 
 .copy-icons svg {
   position: absolute;
-  transition: opacity 280ms cubic-bezier(0.2, 0, 0, 1), scale 280ms cubic-bezier(0.2, 0, 0, 1), filter 280ms cubic-bezier(0.2, 0, 0, 1);
+  transition:
+    opacity 280ms cubic-bezier(0.2, 0, 0, 1),
+    scale 280ms cubic-bezier(0.2, 0, 0, 1),
+    filter 280ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 .copy-check,
@@ -1425,7 +1490,9 @@ h1 {
 
 .input:focus {
   outline: none;
-  box-shadow: inset 0 0 0 1px var(--accent-text), 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow:
+    inset 0 0 0 1px var(--accent-text),
+    0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 select.input {
@@ -1476,7 +1543,9 @@ select.input {
   font-size: 0.8125rem;
   font-weight: 500;
   text-align: center;
-  transition: background-color 160ms ease, color 160ms ease;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
 }
 
 .segment:hover span {
@@ -1571,11 +1640,13 @@ select.input {
   box-shadow: inset 0 0 0 1px var(--border-input);
   appearance: none;
   cursor: pointer;
-  transition: background-color 200ms ease, box-shadow 200ms ease;
+  transition:
+    background-color 200ms ease,
+    box-shadow 200ms ease;
 }
 
 .switch::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 3px;
   left: 3px;
@@ -1584,7 +1655,9 @@ select.input {
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
-  transition: transform 260ms var(--ease-out), width 160ms ease;
+  transition:
+    transform 260ms var(--ease-out),
+    width 160ms ease;
 }
 
 .switch:active::before {
@@ -1631,7 +1704,10 @@ select.input {
   background: var(--bg-card);
   box-shadow: var(--shadow-float);
   color: inherit;
-  transition: opacity 240ms var(--ease-out), scale 240ms var(--ease-out), translate 240ms var(--ease-out);
+  transition:
+    opacity 240ms var(--ease-out),
+    scale 240ms var(--ease-out),
+    translate 240ms var(--ease-out);
 }
 
 .dialog::backdrop {
@@ -1721,7 +1797,10 @@ select.input {
   opacity: 0;
   translate: 0 calc(var(--shift) * 1.5);
   visibility: hidden;
-  transition: opacity 180ms ease, translate 180ms ease, visibility 180ms;
+  transition:
+    opacity 180ms ease,
+    translate 180ms ease,
+    visibility 180ms;
 }
 
 .toast svg {
@@ -1736,7 +1815,10 @@ select.input {
   opacity: 1;
   translate: 0;
   visibility: visible;
-  transition: opacity 280ms var(--ease-out), translate 360ms var(--ease-out), visibility 0ms;
+  transition:
+    opacity 280ms var(--ease-out),
+    translate 360ms var(--ease-out),
+    visibility 0ms;
 }
 
 /* The new theme is revealed by a clip-path animation started in ThemeToggle. */
@@ -1769,7 +1851,10 @@ select.input {
     width: min(288px, 85vw);
     box-shadow: 0 0 40px rgb(0 0 0 / 0.35);
     translate: -100% 0;
-    transition: translate 200ms ease-in, display 200ms allow-discrete, overlay 200ms allow-discrete;
+    transition:
+      translate 200ms ease-in,
+      display 200ms allow-discrete,
+      overlay 200ms allow-discrete;
   }
 
   .sidebar:not(:popover-open) {
@@ -1825,7 +1910,11 @@ select.input {
   }
 
   .hero::before {
-    background: repeating-radial-gradient(circle at 50% calc(100% - 154px), transparent 0 27px, var(--hero-ring) 27px 28px);
+    background: repeating-radial-gradient(
+      circle at 50% calc(100% - 154px),
+      transparent 0 27px,
+      var(--hero-ring) 27px 28px
+    );
     mask-image: radial-gradient(360px 360px at 50% calc(100% - 154px), #000 30%, transparent 80%);
   }
 
@@ -1925,33 +2014,313 @@ select.input {
   }
 }
 
-/* Reduced motion removes movement and loops while keeping fades and color changes. */
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --shift: 0px;
-    --press: 1;
-  }
+/* Reduced motion (system setting or the "Animações: Reduzidas" preference, resolved into data-motion before
+   first paint) removes movement and loops while keeping fades and color changes. */
+:root[data-motion="reduce"] {
+  --shift: 0px;
+  --press: 1;
+}
 
-  .dial-bezel,
-  .pulse::after,
-  .skeleton {
-    animation: none;
-  }
+:root[data-motion="reduce"] .dial-bezel,
+:root[data-motion="reduce"] .pulse::after,
+:root[data-motion="reduce"] .skeleton {
+  animation: none;
+}
 
-  .spin {
-    animation-duration: 2s;
-  }
+:root[data-motion="reduce"] .spin {
+  animation-duration: 2s;
+}
 
-  .dial-tick {
-    transition-delay: 0ms;
-  }
+:root[data-motion="reduce"] .dial-tick {
+  transition-delay: 0ms;
+}
 
-  .nav-indicator,
-  .nav-item svg,
-  .bell-button svg,
-  .quick-arrow,
-  .more-link svg,
-  .switch::before {
-    transition: none;
+:root[data-motion="reduce"] .nav-indicator,
+:root[data-motion="reduce"] .nav-item svg,
+:root[data-motion="reduce"] .bell-button svg,
+:root[data-motion="reduce"] .quick-arrow,
+:root[data-motion="reduce"] .more-link svg,
+:root[data-motion="reduce"] .switch::before {
+  transition: none;
+}
+
+/* Login: outside the app shell, centered card. */
+.login {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: 24px 16px;
+  background: var(--bg-page);
+}
+
+.login-card {
+  gap: 16px;
+  width: min(100%, 400px);
+  padding: 28px 24px;
+}
+
+.login-brand {
+  padding-inline: 0;
+}
+
+.login-title {
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.login-submit {
+  justify-content: center;
+  margin-top: 4px;
+}
+
+/* Text size preference: every font size is in rem, so scaling the root scales the whole interface. */
+:root[data-text-size="large"] {
+  font-size: 112.5%;
+}
+
+:root[data-text-size="larger"] {
+  font-size: 125%;
+}
+
+/* Native <search> landmark around the header form; it does not take part in the layout. */
+.search-region {
+  display: contents;
+}
+
+/* Fieldsets used as semantic groups keep the look of plain containers. */
+fieldset.chips {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* The sidebar privacy card is a link to the privacy policy. */
+a.privacy {
+  color: inherit;
+  text-decoration: none;
+  transition: box-shadow 160ms ease;
+}
+
+a.privacy:hover {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--green) 45%, transparent);
+}
+
+.privacy-link {
+  margin-top: 2px;
+  color: var(--accent-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Session check before the app shell renders. */
+.splash {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 16px;
+  min-height: 100dvh;
+  padding: 24px 16px;
+  background: var(--bg-page);
+}
+
+.splash-logo {
+  animation: splash-pulse 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes splash-pulse {
+  from {
+    opacity: 0.45;
   }
+  to {
+    opacity: 1;
+  }
+}
+
+:root[data-motion="reduce"] .splash-logo {
+  animation: none;
+}
+
+/* Forms: hints, field errors and invalid state. */
+.field-hint {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.field-error {
+  color: var(--error);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.input[aria-invalid="true"] {
+  box-shadow: inset 0 0 0 1px var(--error);
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+}
+
+.notice-ok {
+  background: color-mix(in srgb, var(--green) var(--tint), transparent);
+  color: var(--green);
+}
+
+.login-legal {
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.login-legal a,
+.section-hint a,
+.legal-body a {
+  color: var(--accent-text);
+  text-underline-offset: 2px;
+}
+
+.section-hint {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.dialog-description {
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+/* "Seus dados" (LGPD) rows. */
+.data-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.data-action > div {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.data-action-title {
+  font-weight: 600;
+}
+
+.data-action-danger .data-action-title {
+  color: var(--error);
+}
+
+.button-danger {
+  background: var(--error-fill);
+  box-shadow: var(--shadow-button);
+  color: #fff;
+}
+
+.button-danger:hover:not(:disabled) {
+  background: var(--error-fill-dark);
+}
+
+.button-danger-outline {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--error);
+  color: var(--error);
+}
+
+.button-danger-outline:hover {
+  background: color-mix(in srgb, var(--error) var(--tint), transparent);
+}
+
+/* Privacy policy: standalone, readable line length. */
+.legal {
+  min-height: 100dvh;
+  background: var(--bg-page);
+}
+
+.legal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 760px;
+  margin-inline: auto;
+  padding: 20px 16px;
+}
+
+.legal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 760px;
+  margin-inline: auto;
+  padding: 8px 16px 64px;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+}
+
+.legal-body h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 1.4rem + 1.5vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.legal-body h2 {
+  margin-top: 18px;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.legal-body section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scroll-margin-top: 16px;
+}
+
+.legal-body ul,
+.legal-toc ol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 1.25em;
+}
+
+.legal-body ul {
+  list-style: disc;
+}
+
+.legal-toc {
+  padding: 16px 20px;
+  border-radius: 14px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.legal-toc ol {
+  list-style: decimal;
 }

@@ -1,6 +1,5 @@
-// In-memory mock of the API described in BACKEND.md. Each function names the
-// endpoint it stands in for and resolves with the same shape the endpoint returns.
-// State resets on page reload.
+// Client for the API described in BACKEND.md. Each function names the endpoint it calls and resolves
+// with the documented shape. Errors reject with ApiError, whose message is pt-BR and safe to show.
 
 export type FileType = string
 
@@ -73,155 +72,116 @@ export interface SearchResults {
   people: Person[]
 }
 
-const MINUTE = 60_000
-const HOUR = 60 * MINUTE
-const DAY = 24 * HOUR
-const ago = (ms: number) => new Date(Date.now() - ms).toISOString()
-const fromNow = (ms: number) => new Date(Date.now() + ms).toISOString()
+const BASE_URL = import.meta.env.VITE_API_URL ?? '/api/v1'
 
-let user: User = { id: 'u1', name: 'Marina Costa', email: 'marina@empresa.com', plan: 'Pro Secure' }
+// Fired on any 401 so the app can send the user to the login screen.
+export const UNAUTHORIZED_EVENT = 'vaultshare:unauthorized'
 
-let settings: UserSettings = { requirePassword: true, notifyAccess: true, allowAccessRequests: false }
+export class ApiError extends Error {
+  status: number
+  code: string
+  fields?: Record<string, string>
 
-const files: VaultFile[] = [
-  { id: 'f1', name: 'Planejamento_2026.pdf', type: 'PDF', sizeBytes: 2_400_000, createdAt: ago(12 * MINUTE) },
-  { id: 'f2', name: 'Apresentação produto.png', type: 'PNG', sizeBytes: 1_100_000, createdAt: ago(2 * HOUR) },
-  { id: 'f3', name: 'Contrato_fornecedores.pdf', type: 'PDF', sizeBytes: 840_000, createdAt: ago(26 * HOUR) },
-  { id: 'f4', name: 'Notas da reunião.docx', type: 'DOCX', sizeBytes: 126_000, createdAt: ago(3 * DAY) },
-  { id: 'f5', name: 'Backup_fotos.zip', type: 'ZIP', sizeBytes: 48_000_000, createdAt: ago(8 * DAY) },
-]
-
-const links: ShareLink[] = [
-  {
-    id: 'l1',
-    fileId: 'f2',
-    fileName: 'Apresentação produto.png',
-    url: 'vaultshare.app/s/a8k2',
-    expiresAt: fromNow(7 * DAY),
-    hasPassword: true,
-    readOnly: false,
-    accessCount: 0,
-    createdAt: ago(2 * HOUR),
-  },
-  {
-    id: 'l2',
-    fileId: 'f1',
-    fileName: 'Planejamento_2026.pdf',
-    url: 'vaultshare.app/s/p1n6',
-    expiresAt: null,
-    hasPassword: false,
-    readOnly: true,
-    accessCount: 3,
-    createdAt: ago(3 * DAY),
-  },
-]
-
-const events: ActivityEvent[] = [
-  { id: 'e1', type: 'file_accessed', actor: 'financeiro@empresa.com', fileName: 'Planejamento_2026.pdf', createdAt: ago(12 * MINUTE) },
-  { id: 'e2', type: 'link_created', actor: null, fileName: 'Apresentação produto.png', createdAt: ago(2 * HOUR) },
-  { id: 'e3', type: 'password_added', actor: null, fileName: 'Contrato_fornecedores.pdf', createdAt: ago(26 * HOUR) },
-  { id: 'e4', type: 'access_requested', actor: 'Lucas Almeida', fileName: null, createdAt: ago(27 * HOUR) },
-]
-
-const people: Person[] = [
-  { id: 'p1', name: 'Lucas Almeida', email: 'lucas@empresa.com' },
-  { id: 'p2', name: 'Financeiro', email: 'financeiro@empresa.com' },
-]
-
-const stats = { storageUsedBytes: 18_400_000_000, storageQuotaBytes: 30_000_000_000, protectedFiles: 24, recentAccesses: 12 }
-
-const respond = <T,>(data: T) => new Promise<T>((resolve) => setTimeout(() => resolve(structuredClone(data)), 250))
-const newId = () => crypto.randomUUID()
-
-function logEvent(type: EventType, fileName: string) {
-  events.unshift({ id: newId(), type, actor: null, fileName, createdAt: new Date().toISOString() })
+  constructor(status: number, code: string, message: string, fields?: Record<string, string>) {
+    super(message)
+    this.status = status
+    this.code = code
+    this.fields = fields
+  }
 }
 
-function addFile(name: string, type: FileType, sizeBytes: number) {
-  const file: VaultFile = { id: newId(), name, type, sizeBytes, createdAt: new Date().toISOString() }
-  files.unshift(file)
-  stats.protectedFiles += 1
-  stats.storageUsedBytes += sizeBytes
-  return file
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const headers: Record<string, string> = {}
+  let payload: BodyInit | undefined
+  if (body instanceof FormData) {
+    payload = body
+  } else if (body !== undefined) {
+    headers['Content-Type'] = 'application/json'
+    payload = JSON.stringify(body)
+  }
+  // The API refuses writes without this header (CSRF protection).
+  if (method !== 'GET') headers['X-Requested-With'] = 'VaultShare'
+
+  let response: Response
+  try {
+    response = await fetch(BASE_URL + path, { method, headers, body: payload, credentials: 'include' })
+  } catch {
+    throw new ApiError(0, 'NETWORK_ERROR', 'Sem conexão com o servidor. Verifique sua internet e tente novamente.')
+  }
+
+  if (response.status === 204) return undefined as T
+  const data = await response.json().catch(() => null)
+  if (!response.ok) {
+    if (response.status === 401 && path !== '/auth/login') window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
+    throw new ApiError(
+      response.status,
+      data?.code ?? 'UNKNOWN_ERROR',
+      data?.message ?? 'Não foi possível concluir a ação.',
+      data?.fields,
+    )
+  }
+  return data as T
 }
+
+// POST /auth/login
+export const login = (email: string, password: string) => request<User>('POST', '/auth/login', { email, password })
+
+// POST /auth/logout
+export const logout = () => request<void>('POST', '/auth/logout')
 
 // GET /me
-export const getMe = () => respond(user)
+export const getMe = () => request<User>('GET', '/me')
 
 // PATCH /me
-export function updateMe(patch: Pick<User, 'name' | 'email'>) {
-  user = { ...user, ...patch }
-  return respond(user)
-}
+export const updateMe = (patch: Pick<User, 'name' | 'email'>) => request<User>('PATCH', '/me', patch)
 
 // GET /me/settings
-export const getSettings = () => respond(settings)
+export const getSettings = () => request<UserSettings>('GET', '/me/settings')
 
 // PUT /me/settings
-export function updateSettings(next: UserSettings) {
-  settings = next
-  return respond(settings)
-}
+export const updateSettings = (next: UserSettings) => request<UserSettings>('PUT', '/me/settings', next)
 
 // GET /overview
-export const getOverview = () => respond<OverviewStats>({ ...stats, activeLinks: links.length })
+export const getOverview = () => request<OverviewStats>('GET', '/overview')
 
 // GET /activity?limit=
-export const getActivity = (limit?: number) => respond(events.slice(0, limit))
+export const getActivity = (limit?: number) =>
+  request<ActivityEvent[]>('GET', limit === undefined ? '/activity' : `/activity?limit=${limit}`)
 
 // GET /notifications
-export const getNotifications = () => respond(events.slice(0, 5))
+export const getNotifications = () => request<ActivityEvent[]>('GET', '/notifications')
 
 // GET /files
-export const getFiles = () => respond(files)
+export const getFiles = () => request<VaultFile[]>('GET', '/files')
 
 // POST /files
-export function createFile(input: { name: string; type: FileType }) {
-  const extension = `.${input.type.toLowerCase()}`
-  const name = input.name.toLowerCase().endsWith(extension) ? input.name : input.name + extension
-  const file = addFile(name, input.type, 0)
-  logEvent('file_created', file.name)
-  return respond(file)
-}
+export const createFile = (input: { name: string; type: FileType }) => request<VaultFile>('POST', '/files', input)
 
 // POST /files/upload (multipart/form-data)
 export function uploadFile(upload: File) {
-  const type = upload.name.includes('.') ? upload.name.split('.').pop()!.toUpperCase() : 'ARQUIVO'
-  const file = addFile(upload.name, type, upload.size)
-  logEvent('file_uploaded', file.name)
-  return respond(file)
+  const form = new FormData()
+  form.append('file', upload)
+  return request<VaultFile>('POST', '/files/upload', form)
 }
 
 // GET /links
-export const getLinks = () => respond(links)
+export const getLinks = () => request<ShareLink[]>('GET', '/links')
 
 // POST /links
-export function createLink(input: { fileId: string; expiresInDays: number | null; password: string | null }) {
-  const file = files.find((f) => f.id === input.fileId)
-  if (!file) return Promise.reject(new Error('Arquivo não encontrado.'))
-  const link: ShareLink = {
-    id: newId(),
-    fileId: file.id,
-    fileName: file.name,
-    url: `vaultshare.app/s/${newId().slice(0, 4)}`,
-    expiresAt: input.expiresInDays === null ? null : fromNow(input.expiresInDays * DAY),
-    hasPassword: Boolean(input.password),
-    readOnly: false,
-    accessCount: 0,
-    createdAt: new Date().toISOString(),
-  }
-  links.unshift(link)
-  logEvent('link_created', file.name)
-  return respond(link)
-}
+export const createLink = (input: { fileId: string; expiresInDays: number | null; password: string | null }) =>
+  request<ShareLink>('POST', '/links', input)
 
 // GET /search?q=
-export function search(query: string) {
-  const q = query.trim().toLowerCase()
-  const matches = (text: string) => text.toLowerCase().includes(q)
-  return respond<SearchResults>({
-    files: files.filter((f) => matches(f.name)),
-    links: links.filter((l) => matches(l.fileName) || matches(l.url)),
-    people: people.filter((p) => matches(p.name) || matches(p.email)),
-  })
+export const search = (query: string) => request<SearchResults>('GET', `/search?q=${encodeURIComponent(query.trim())}`)
+
+// GET /me/export (LGPD art. 18, II and V): returns the file so the caller can offer it as a download.
+export async function exportMyData() {
+  const response = await fetch(`${BASE_URL}/me/export`, { credentials: 'include' })
+  if (response.status === 401) window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
+  if (!response.ok)
+    throw new ApiError(response.status, 'EXPORT_FAILED', 'Não foi possível gerar o arquivo com seus dados.')
+  return response.blob()
 }
+
+// DELETE /me (LGPD art. 18, VI)
+export const deleteAccount = (password: string) => request<void>('DELETE', '/me', { password })

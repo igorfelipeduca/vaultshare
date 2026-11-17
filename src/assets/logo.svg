@@ -1,4 +1,5 @@
-<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="logo-title">
+<title id="logo-title">VaultShare</title>
 <g id="Logo">
 <path id="Vector" d="M14 3.5L5.83333 7.23333V13.4167C5.83333 18.2 9.1 22.6333 14 23.8C18.9 22.6333 22.1667 18.2 22.1667 13.4167V7.23333L14 3.5Z" fill="#3B82F6"/>
 <path id="Vector_2" d="M10.5 14L12.8333 16.3333L17.5 11.6667" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" stroke="white"/>

@@ -26,3 +26,10 @@ dist-ssr
 # Local tooling
 .impeccable
 .vercel
+# Playwright CLI output (may contain credentials)
+.playwright-cli/
+
+# API local data (database, encrypted files, secrets)
+server/data
+server/storage
+server/.env

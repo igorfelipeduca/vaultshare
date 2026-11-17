@@ -7,11 +7,18 @@
     <meta name="description" content="VaultShare: armazene e compartilhe arquivos com regras de acesso." />
     <title>VaultShare</title>
     <script>
-      // Applies the theme before first paint so the page never flashes the wrong one.
-      var stored = null
-      try { stored = localStorage.getItem('theme') } catch (e) {}
-      document.documentElement.dataset.theme =
-        stored || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      // Applies appearance preferences before first paint so the page never flashes the wrong theme or size.
+      // Mirrors applyPreferences() in src/lib/preferences.ts.
+      ;(function () {
+        var p = {}
+        try { p = JSON.parse(localStorage.getItem('vaultshare:preferences') || '{}') || {} } catch (e) {}
+        try { if (!p.theme) p.theme = localStorage.getItem('theme') } catch (e) {}
+        var root = document.documentElement.dataset
+        var media = function (query) { return matchMedia(query).matches }
+        root.theme = p.theme === 'light' || p.theme === 'dark' ? p.theme : media('(prefers-color-scheme: dark)') ? 'dark' : 'light'
+        root.motion = p.motion === 'reduce' || media('(prefers-reduced-motion: reduce)') ? 'reduce' : 'full'
+        root.textSize = p.textSize === 'large' || p.textSize === 'larger' ? p.textSize : 'normal'
+      })()
     </script>
   </head>
   <body>

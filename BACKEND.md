@@ -1,21 +1,42 @@
 # VaultShare: contrato da API
 
-Tudo o que o back-end precisa expor para o site deixar de ser mockado.
+Tudo o que o back-end expõe para o site. A implementação de referência está em [`server/`](./server) (Node 22, Fastify 5, SQLite).
 
-Hoje os dados vêm de `src/api.ts`, um mock em memória. Cada função tem um comentário com a rota correspondente (`// GET /files`) e já retorna o formato descrito aqui. Para integrar, basta trocar o corpo de cada função por um `fetch`: as telas não mudam.
+## Rodando localmente
+
+```bash
+cd server && npm install
+cp .env.example .env      # ajuste SEED_PASSWORD e ENCRYPTION_KEY
+npm run seed              # conta de demonstração marina@empresa.com
+npm run dev               # http://127.0.0.1:3333 (o Vite faz proxy de /api)
+npm test
+```
+
+## Decisões da implementação
+
+- **CSRF:** toda requisição que não seja `GET` precisa do cabeçalho `X-Requested-With: VaultShare` e de uma `Origin` permitida (`CORS_ORIGINS`). Sem isso, `403`.
+- **Sessão:** cookie `HttpOnly`, `SameSite=Lax` (`__Host-vs_session` com `Secure` em produção), válido por 7 dias. O banco guarda só o SHA-256 do token.
+- **Senhas** de contas e de links: argon2id.
+- **Links:** identificador aleatório de 128 bits (22 caracteres).
+- **Upload:** limite de 100 MB por arquivo (`MAX_UPLOAD_BYTES`). O tipo vem da extensão e é conferido pela assinatura do conteúdo (PDF, PNG, JPG, GIF, ZIP/DOCX/XLSX/PPTX). O arquivo é salvo com nome aleatório e cifrado com AES-256-GCM (`ENCRYPTION_KEY`).
+- **Limites de taxa:** 5 tentativas de login por minuto por IP e e-mail; 300 requisições por minuto por IP no geral. Excedeu, `429` com `code: "TOO_MANY_REQUESTS"`.
+- **Busca:** ignora maiúsculas e acentos ("reuniao" encontra "Reunião"), até 20 resultados por grupo.
+- **Front:** a tela `/login` usa `POST /auth/login`; o botão de sair no cabeçalho usa `POST /auth/logout`; qualquer `401` leva ao login e volta para a página original.
+
+O front chama a API por `src/api.ts`. Cada função tem um comentário com a rota correspondente (`// GET /files`) e retorna o formato descrito aqui.
 
 ## Convenções
 
-| Item | Regra |
-|---|---|
-| URL base | `/api/v1` (sugestão, o front só precisa de um prefixo fixo) |
-| Formato | JSON em UTF-8, exceto o upload (`multipart/form-data`) |
-| Campos | `camelCase` |
-| Datas | ISO 8601 em UTC, ex.: `2026-11-04T14:30:00Z` |
-| Tamanhos | Sempre em bytes (número inteiro). O front formata (`2,4 MB`) |
-| Textos relativos | O back manda a data. O front calcula "há 12 min", "ontem", "Expira em 7 dias" |
-| Autenticação | Toda rota exige sessão, exceto `POST /auth/login`. Sugestão: cookie `HttpOnly`, `Secure`, `SameSite=Lax` |
-| CORS | Em desenvolvimento, liberar `http://localhost:5173` com credenciais |
+| Item             | Regra                                                                                                    |
+| ---------------- | -------------------------------------------------------------------------------------------------------- |
+| URL base         | `/api/v1` (sugestão, o front só precisa de um prefixo fixo)                                              |
+| Formato          | JSON em UTF-8, exceto o upload (`multipart/form-data`)                                                   |
+| Campos           | `camelCase`                                                                                              |
+| Datas            | ISO 8601 em UTC, ex.: `2026-11-04T14:30:00Z`                                                             |
+| Tamanhos         | Sempre em bytes (número inteiro). O front formata (`2,4 MB`)                                             |
+| Textos relativos | O back manda a data. O front calcula "há 12 min", "ontem", "Expira em 7 dias"                            |
+| Autenticação     | Toda rota exige sessão, exceto `POST /auth/login`. Sugestão: cookie `HttpOnly`, `Secure`, `SameSite=Lax` |
+| CORS             | Em desenvolvimento, liberar `http://localhost:5173` com credenciais                                      |
 
 ### Erros
 
@@ -29,23 +50,25 @@ Todo erro usa o status HTTP adequado e este corpo. O front mostra `message` dire
 
 ## Resumo das rotas
 
-| Método | Rota | Usada em |
-|---|---|---|
-| `POST` | `/auth/login` | Sem tela ainda (ver [pendências](#pendências-do-design)) |
-| `POST` | `/auth/logout` | Sem tela ainda |
-| `GET` | `/me` | Cabeçalho (nome, iniciais, plano), Configurações |
-| `PATCH` | `/me` | Configurações: Salvar alterações |
-| `GET` | `/me/settings` | Configurações, modal Gerar link |
-| `PUT` | `/me/settings` | Configurações: Salvar alterações |
-| `GET` | `/overview` | Visão geral: 4 cards de métricas |
-| `GET` | `/activity` | Visão geral (`limit=4`), Atividade |
-| `GET` | `/notifications` | Sino do cabeçalho |
-| `GET` | `/files` | Meus arquivos, modal Gerar link |
-| `POST` | `/files` | Modal Criar arquivo |
-| `POST` | `/files/upload` | Visão geral: Enviar arquivo |
-| `GET` | `/links` | Links compartilhados |
-| `POST` | `/links` | Modal Gerar link |
-| `GET` | `/search` | Campo de busca do cabeçalho |
+| Método   | Rota             | Usada em                                                 |
+| -------- | ---------------- | -------------------------------------------------------- |
+| `POST`   | `/auth/login`    | Sem tela ainda (ver [pendências](#pendências-do-design)) |
+| `POST`   | `/auth/logout`   | Sem tela ainda                                           |
+| `GET`    | `/me`            | Cabeçalho (nome, iniciais, plano), Configurações         |
+| `PATCH`  | `/me`            | Configurações: Salvar alterações                         |
+| `GET`    | `/me/settings`   | Configurações, modal Gerar link                          |
+| `PUT`    | `/me/settings`   | Configurações: Salvar alterações                         |
+| `GET`    | `/overview`      | Visão geral: 4 cards de métricas                         |
+| `GET`    | `/activity`      | Visão geral (`limit=4`), Atividade                       |
+| `GET`    | `/notifications` | Sino do cabeçalho                                        |
+| `GET`    | `/files`         | Meus arquivos, modal Gerar link                          |
+| `POST`   | `/files`         | Modal Criar arquivo                                      |
+| `POST`   | `/files/upload`  | Visão geral: Enviar arquivo                              |
+| `GET`    | `/links`         | Links compartilhados                                     |
+| `POST`   | `/links`         | Modal Gerar link                                         |
+| `GET`    | `/search`        | Campo de busca do cabeçalho                              |
+| `GET`    | `/me/export`     | Configurações → Seus dados → Baixar (LGPD)               |
+| `DELETE` | `/me`            | Configurações → Seus dados → Excluir conta (LGPD)        |
 
 ## Modelos
 
@@ -58,15 +81,15 @@ interface User {
 }
 
 interface UserSettings {
-  requirePassword: boolean     // Exigir senha em novos links
-  notifyAccess: boolean        // Notificar acessos aos arquivos
+  requirePassword: boolean // Exigir senha em novos links
+  notifyAccess: boolean // Notificar acessos aos arquivos
   allowAccessRequests: boolean // Permitir pedidos de acesso
 }
 
 interface VaultFile {
   id: string
-  name: string       // "Planejamento_2026.pdf"
-  type: string       // em maiúsculas: "PDF", "PNG", "DOCX", "ZIP"
+  name: string // "Planejamento_2026.pdf"
+  type: string // em maiúsculas: "PDF", "PNG", "DOCX", "ZIP"
   sizeBytes: number
   createdAt: string
 }
@@ -75,9 +98,9 @@ interface ShareLink {
   id: string
   fileId: string
   fileName: string
-  url: string               // sem protocolo: "vaultshare.app/s/a8k2"
-  expiresAt: string | null  // null = não expira
-  hasPassword: boolean      // nunca devolver a senha nem o hash
+  url: string // sem protocolo: "vaultshare.app/s/a8k2"
+  expiresAt: string | null // null = não expira
+  hasPassword: boolean // nunca devolver a senha nem o hash
   readOnly: boolean
   accessCount: number
   createdAt: string
@@ -85,10 +108,9 @@ interface ShareLink {
 
 interface ActivityEvent {
   id: string
-  type: 'file_accessed' | 'link_created' | 'password_added'
-      | 'access_requested' | 'file_created' | 'file_uploaded'
-  actor: string | null     // quem fez a ação; null quando foi o próprio usuário
-  fileName: string | null  // null quando o evento não envolve arquivo
+  type: 'file_accessed' | 'link_created' | 'password_added' | 'access_requested' | 'file_created' | 'file_uploaded'
+  actor: string | null // quem fez a ação; null quando foi o próprio usuário
+  fileName: string | null // null quando o evento não envolve arquivo
   createdAt: string
 }
 
@@ -101,14 +123,14 @@ interface Person {
 
 O back manda o evento estruturado e o front monta a frase. `type`, `actor` e `fileName` são obrigatórios conforme a tabela:
 
-| `type` | Campos usados | Frase exibida |
-|---|---|---|
-| `file_accessed` | `actor`, `fileName` | financeiro@empresa.com acessou Planejamento_2026.pdf |
-| `link_created` | `fileName` | Você criou um link seguro para Apresentação produto.png |
-| `password_added` | `fileName` | Contrato_fornecedores.pdf recebeu proteção por senha |
-| `access_requested` | `actor` | Novo pedido de acesso de Lucas Almeida |
-| `file_created` | `fileName` | Você criou Relatorio_agosto.pdf |
-| `file_uploaded` | `fileName` | Você enviou relatorio.pdf |
+| `type`             | Campos usados       | Frase exibida                                           |
+| ------------------ | ------------------- | ------------------------------------------------------- |
+| `file_accessed`    | `actor`, `fileName` | financeiro@empresa.com acessou Planejamento_2026.pdf    |
+| `link_created`     | `fileName`          | Você criou um link seguro para Apresentação produto.png |
+| `password_added`   | `fileName`          | Contrato_fornecedores.pdf recebeu proteção por senha    |
+| `access_requested` | `actor`             | Novo pedido de acesso de Lucas Almeida                  |
+| `file_created`     | `fileName`          | Você criou Relatorio_agosto.pdf                         |
+| `file_uploaded`    | `fileName`          | Você enviou relatorio.pdf                               |
 
 ## Autenticação
 
@@ -222,15 +244,32 @@ Usada pelo botão "Enviar arquivo". `multipart/form-data` com o campo `file`.
 { "fileId": "f2", "expiresInDays": 7, "password": "minha-senha" }
 ```
 
-| Campo | Regra |
-|---|---|
-| `fileId` | Obrigatório, precisa ser um arquivo do próprio usuário. Senão, `404` |
-| `expiresInDays` | `1`, `7`, `30` ou `null` (sem expiração) |
-| `password` | Mínimo de 8 caracteres, ou `null` |
+| Campo           | Regra                                                                |
+| --------------- | -------------------------------------------------------------------- |
+| `fileId`        | Obrigatório, precisa ser um arquivo do próprio usuário. Senão, `404` |
+| `expiresInDays` | `1`, `7`, `30` ou `null` (sem expiração)                             |
+| `password`      | Mínimo de 8 caracteres, ou `null`                                    |
 
 `201` com o `ShareLink`. Deve registrar um evento `link_created`.
 
 Se `requirePassword` do usuário estiver ligado e `password` vier `null`, responder `400`. O front já bloqueia esse caso, mas só o back garante a regra.
+
+## LGPD
+
+### `GET /me/export`
+
+Direitos de confirmação, acesso e portabilidade (art. 18, I, II e V). `200` com um JSON para download (`Content-Disposition: attachment`, `Cache-Control: no-store`):
+
+```json
+{ "exportedAt": "…", "account": { "id": "…", "name": "…", "email": "…", "plan": "…", "createdAt": "…", "storageQuotaBytes": 30000000000 },
+  "settings": { … }, "files": [ … ], "links": [ … ], "activity": [ … ], "contacts": [ … ], "activeSessions": 1 }
+```
+
+Nunca inclui hashes de senha nem caminhos de armazenamento.
+
+### `DELETE /me`
+
+Direito de eliminação (art. 18, VI). Recebe `{ "password": "…" }`. Senha errada responde `400` (não `401`, para o front não confundir com sessão expirada). Sucesso: `204`, apaga a conta, sessões, arquivos (inclusive os criptografados em disco), links, eventos e contatos, e limpa o cookie. Limitado a 5 tentativas por minuto.
 
 ## Busca
 
@@ -265,7 +304,7 @@ O front só valida para ajudar o usuário. Estas regras precisam estar no back:
 Estes pontos não estão definidos no Figma e precisam de decisão entre vocês:
 
 1. **O que "Criar arquivo" cria?** O modal só pede nome e tipo, sem conteúdo. Hoje isso gera um arquivo vazio de 0 B, e "Enviar arquivo" é o único jeito de mandar conteúdo.
-2. **Login:** não há tela de login nem de logout. O site assume um usuário já logado. As rotas de `/auth` estão aqui porque o back precisará delas, mas nada no front as chama ainda. Sem sessão (`401`), hoje as telas só mostram "Não foi possível carregar os dados".
+2. **Login:** o Figma não tem tela de login. Foi criada uma tela mínima em `/login` com os estilos existentes; vale passar pelo design.
 3. **Página pública do link:** `vaultshare.app/s/a8k2` não tem tela. Falta definir a página em que quem recebe o link digita a senha e baixa o arquivo. Ela precisará de algo como `GET /public/links/:slug`, `POST /public/links/:slug/unlock` e uma rota de download. É aí que `accessCount` e o evento `file_accessed` são gerados.
 4. **Excluir e baixar:** não há botões para excluir arquivo, revogar link nem baixar arquivo. Se entrarem no design, as rotas naturais são `DELETE /files/:id`, `DELETE /links/:id` e `GET /files/:id/download`.
 5. **Pedidos de acesso:** o evento `access_requested` e o switch "Permitir pedidos de acesso" existem, mas não há tela para aprovar ou recusar.
