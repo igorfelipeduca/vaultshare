@@ -19,7 +19,7 @@ npm test
 - **Senhas** de contas e de links: argon2id.
 - **Links:** identificador aleatório de 128 bits (22 caracteres).
 - **Upload:** limite de 100 MB por arquivo (`MAX_UPLOAD_BYTES`). O tipo vem da extensão e é conferido pela assinatura do conteúdo (PDF, PNG, JPG, GIF, ZIP/DOCX/XLSX/PPTX). O arquivo é salvo com nome aleatório e cifrado com AES-256-GCM (`ENCRYPTION_KEY`).
-- **Limites de taxa:** 5 tentativas de login por minuto por conta (e-mail); 10 downloads por minuto por link público; 300 requisições por minuto por IP no geral. Excedeu, `429` com `code: "TOO_MANY_REQUESTS"`.
+- **Limites de taxa:** 5 tentativas de login por minuto por conta (e-mail); 10 downloads por minuto por link público; 30 cadastros por minuto no total; 300 requisições por minuto por IP no geral. Excedeu, `429` com `code: "TOO_MANY_REQUESTS"`.
 - **Busca:** ignora maiúsculas e acentos ("reuniao" encontra "Reunião"), até 20 resultados por grupo.
 - **Front:** a tela `/login` usa `POST /auth/login`; o botão de sair no cabeçalho usa `POST /auth/logout`; qualquer `401` leva ao login e volta para a página original.
 

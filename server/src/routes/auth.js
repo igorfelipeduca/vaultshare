@@ -62,7 +62,11 @@ export default async function authRoutes(app, { db, sessions }) {
     },
   )
 
-  app.post('/auth/register', { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, async (request, reply) => {
+  // One shared bucket for every sign-up: behind the Vercel proxy request.ip rotates, so a per-IP limit would not
+  // stop mass account creation.
+  const registerLimit = { max: 30, timeWindow: '1 minute', keyGenerator: () => 'register' }
+
+  app.post('/auth/register', { config: { rateLimit: registerLimit } }, async (request, reply) => {
     const { name, email, password } = registerBody.parse(request.body)
     if (findByEmail.get(email)) throw conflict(EMAIL_TAKEN, { email: EMAIL_TAKEN })
 

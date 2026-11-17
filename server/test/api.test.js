@@ -464,6 +464,19 @@ describe('cadastro', () => {
     assert.ok(response.json().fields.email)
   })
 
+  test('limita cadastros no total, mesmo vindo de IPs diferentes', async () => {
+    const attempt = (i) =>
+      app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/register',
+        headers: writeHeaders,
+        remoteAddress: `10.0.1.${i}`,
+        payload: { name: 'X', email: 'nao-e-email', password: 'curta' },
+      })
+    for (let i = 0; i < 30; i++) assert.equal((await attempt(i)).statusCode, 400)
+    assert.equal((await attempt(99)).statusCode, 429)
+  })
+
   test('valida nome, e-mail e tamanho da senha', async () => {
     const response = await register({ name: ' ', email: 'nao-e-email', password: 'curta' })
     assert.equal(response.statusCode, 400)
