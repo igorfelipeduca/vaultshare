@@ -1,4 +1,4 @@
-import type { ActivityEvent, ShareLink, VaultFile } from './api'
+import type { ActivityEvent, ShareLink, SharedLink, VaultFile } from './api'
 
 const DAY = 86_400_000
 const number = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 })
@@ -31,17 +31,24 @@ export function fileMeta(file: VaultFile, now = Date.now()) {
   return `${file.type} · ${formatBytes(file.sizeBytes)} · ${relativeTime(file.createdAt, { ago: true, now })}`
 }
 
+export function expiryText(expiresAt: string, now = Date.now()) {
+  const days = Math.ceil((new Date(expiresAt).getTime() - now) / DAY)
+  return days > 0 ? `Expira em ${days} ${days === 1 ? 'dia' : 'dias'}` : 'Expirado'
+}
+
+export function sharedLinkMeta(link: SharedLink, now = Date.now()) {
+  const parts = [link.fileType, formatBytes(link.sizeBytes)]
+  if (link.expiresAt) parts.push(expiryText(link.expiresAt, now))
+  return parts.join(' · ')
+}
+
 export type LinkRuleKind = 'expiry' | 'expired' | 'password' | 'readonly' | 'accesses' | 'open'
 
 export function linkRules(link: ShareLink, now = Date.now()) {
   const rules: { kind: LinkRuleKind; label: string }[] = []
   if (link.expiresAt) {
-    const days = Math.ceil((new Date(link.expiresAt).getTime() - now) / DAY)
-    rules.push(
-      days > 0
-        ? { kind: 'expiry', label: `Expira em ${days} ${days === 1 ? 'dia' : 'dias'}` }
-        : { kind: 'expired', label: 'Expirado' },
-    )
+    const label = expiryText(link.expiresAt, now)
+    rules.push({ kind: label === 'Expirado' ? 'expired' : 'expiry', label })
   }
   if (link.hasPassword) rules.push({ kind: 'password', label: 'Senha ativa' })
   if (link.readOnly) rules.push({ kind: 'readonly', label: 'Somente leitura' })

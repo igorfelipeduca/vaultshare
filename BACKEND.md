@@ -19,7 +19,7 @@ npm test
 - **Senhas** de contas e de links: argon2id.
 - **Links:** identificador aleatório de 128 bits (22 caracteres).
 - **Upload:** limite de 100 MB por arquivo (`MAX_UPLOAD_BYTES`). O tipo vem da extensão e é conferido pela assinatura do conteúdo (PDF, PNG, JPG, GIF, ZIP/DOCX/XLSX/PPTX). O arquivo é salvo com nome aleatório e cifrado com AES-256-GCM (`ENCRYPTION_KEY`).
-- **Limites de taxa:** 5 tentativas de login por minuto por IP e e-mail; 300 requisições por minuto por IP no geral. Excedeu, `429` com `code: "TOO_MANY_REQUESTS"`.
+- **Limites de taxa:** 5 tentativas de login por minuto por conta (e-mail); 10 downloads por minuto por link público; 300 requisições por minuto por IP no geral. Excedeu, `429` com `code: "TOO_MANY_REQUESTS"`.
 - **Busca:** ignora maiúsculas e acentos ("reuniao" encontra "Reunião"), até 20 resultados por grupo.
 - **Front:** a tela `/login` usa `POST /auth/login`; o botão de sair no cabeçalho usa `POST /auth/logout`; qualquer `401` leva ao login e volta para a página original.
 
@@ -50,25 +50,28 @@ Todo erro usa o status HTTP adequado e este corpo. O front mostra `message` dire
 
 ## Resumo das rotas
 
-| Método   | Rota             | Usada em                                                 |
-| -------- | ---------------- | -------------------------------------------------------- |
-| `POST`   | `/auth/login`    | Sem tela ainda (ver [pendências](#pendências-do-design)) |
-| `POST`   | `/auth/logout`   | Sem tela ainda                                           |
-| `GET`    | `/me`            | Cabeçalho (nome, iniciais, plano), Configurações         |
-| `PATCH`  | `/me`            | Configurações: Salvar alterações                         |
-| `GET`    | `/me/settings`   | Configurações, modal Gerar link                          |
-| `PUT`    | `/me/settings`   | Configurações: Salvar alterações                         |
-| `GET`    | `/overview`      | Visão geral: 4 cards de métricas                         |
-| `GET`    | `/activity`      | Visão geral (`limit=4`), Atividade                       |
-| `GET`    | `/notifications` | Sino do cabeçalho                                        |
-| `GET`    | `/files`         | Meus arquivos, modal Gerar link                          |
-| `POST`   | `/files`         | Modal Criar arquivo                                      |
-| `POST`   | `/files/upload`  | Visão geral: Enviar arquivo                              |
-| `GET`    | `/links`         | Links compartilhados                                     |
-| `POST`   | `/links`         | Modal Gerar link                                         |
-| `GET`    | `/search`        | Campo de busca do cabeçalho                              |
-| `GET`    | `/me/export`     | Configurações → Seus dados → Baixar (LGPD)               |
-| `DELETE` | `/me`            | Configurações → Seus dados → Excluir conta (LGPD)        |
+| Método   | Rota                           | Usada em                                          |
+| -------- | ------------------------------ | ------------------------------------------------- |
+| `POST`   | `/auth/login`                  | Tela `/login`                                     |
+| `POST`   | `/auth/register`               | Tela `/cadastro`                                  |
+| `POST`   | `/auth/logout`                 | Cabeçalho: botão Sair                             |
+| `GET`    | `/me`                          | Cabeçalho (nome, iniciais, plano), Configurações  |
+| `PATCH`  | `/me`                          | Configurações: Salvar alterações                  |
+| `GET`    | `/me/settings`                 | Configurações, modal Gerar link                   |
+| `PUT`    | `/me/settings`                 | Configurações: Salvar alterações                  |
+| `GET`    | `/overview`                    | Visão geral: 4 cards de métricas                  |
+| `GET`    | `/activity`                    | Visão geral (`limit=4`), Atividade                |
+| `GET`    | `/notifications`               | Sino do cabeçalho                                 |
+| `GET`    | `/files`                       | Meus arquivos, modal Gerar link                   |
+| `POST`   | `/files`                       | Modal Criar arquivo                               |
+| `POST`   | `/files/upload`                | Visão geral: Enviar arquivo                       |
+| `GET`    | `/links`                       | Links compartilhados                              |
+| `POST`   | `/links`                       | Modal Gerar link                                  |
+| `GET`    | `/search`                      | Campo de busca do cabeçalho                       |
+| `GET`    | `/me/export`                   | Configurações → Seus dados → Baixar (LGPD)        |
+| `DELETE` | `/me`                          | Configurações → Seus dados → Excluir conta (LGPD) |
+| `GET`    | `/public/links/:slug`          | Página pública `/s/:slug` (sem sessão)            |
+| `POST`   | `/public/links/:slug/download` | Página pública `/s/:slug`: Baixar arquivo         |
 
 ## Modelos
 
@@ -141,6 +144,14 @@ O back manda o evento estruturado e o front monta a frase. `type`, `actor` e `fi
 ```
 
 `200` com um `User` e a sessão criada. `401` se as credenciais estiverem erradas, com a mesma mensagem para e-mail inexistente e senha incorreta.
+
+### `POST /auth/register`
+
+```json
+{ "name": "Carla Dias", "email": "carla@empresa.com", "password": "..." }
+```
+
+`201` com o `User` e a sessão já criada. `400` se faltar nome, o e-mail for inválido ou a senha tiver menos de 8 caracteres; `409` se o e-mail já tiver conta (sem diferenciar maiúsculas).
 
 ### `POST /auth/logout`
 
@@ -254,6 +265,34 @@ Usada pelo botão "Enviar arquivo". `multipart/form-data` com o campo `file`.
 
 Se `requirePassword` do usuário estiver ligado e `password` vier `null`, responder `400`. O front já bloqueia esse caso, mas só o back garante a regra.
 
+## Link público
+
+Rotas sem sessão para quem recebe um link. O slug de 128 bits é a credencial; link inexistente, expirado ou com slug malformado responde `404` com a mesma mensagem. Nunca expõem o dono do arquivo.
+
+### `GET /public/links/:slug`
+
+```json
+{
+  "fileName": "relatorio.pdf",
+  "fileType": "PDF",
+  "sizeBytes": 2400000,
+  "expiresAt": "2026-11-24T22:22:38Z",
+  "hasPassword": true,
+  "readOnly": false,
+  "hasContent": true
+}
+```
+
+`hasContent` é `false` para arquivos feitos em "Criar arquivo", que não têm conteúdo para baixar.
+
+### `POST /public/links/:slug/download`
+
+```json
+{ "password": "minha-senha" }
+```
+
+`password` pode ser `null` quando o link não tem senha. `200` com o arquivo decifrado (`Content-Disposition` com o nome); só PDF e imagens saem com o tipo real, o resto como `application/octet-stream`. `400` com `fields.password` se a senha faltar ou estiver errada; `404` se o arquivo não tiver conteúdo. Cada download soma 1 em `accessCount` e registra `file_accessed` com `actor: "Alguém com o link"`.
+
 ## LGPD
 
 ### `GET /me/export`
@@ -305,7 +344,7 @@ Estes pontos não estão definidos no Figma e precisam de decisão entre vocês:
 
 1. **O que "Criar arquivo" cria?** O modal só pede nome e tipo, sem conteúdo. Hoje isso gera um arquivo vazio de 0 B, e "Enviar arquivo" é o único jeito de mandar conteúdo.
 2. **Login:** o Figma não tem tela de login. Foi criada uma tela mínima em `/login` com os estilos existentes; vale passar pelo design.
-3. **Página pública do link:** `vaultshare.app/s/a8k2` não tem tela. Falta definir a página em que quem recebe o link digita a senha e baixa o arquivo. Ela precisará de algo como `GET /public/links/:slug`, `POST /public/links/:slug/unlock` e uma rota de download. É aí que `accessCount` e o evento `file_accessed` são gerados.
+3. **Página pública do link:** existe uma tela mínima em `/s/:slug` (senha + Baixar arquivo) com os estilos do login; vale passar pelo design.
 4. **Excluir e baixar:** não há botões para excluir arquivo, revogar link nem baixar arquivo. Se entrarem no design, as rotas naturais são `DELETE /files/:id`, `DELETE /links/:id` e `GET /files/:id/download`.
 5. **Pedidos de acesso:** o evento `access_requested` e o switch "Permitir pedidos de acesso" existem, mas não há tela para aprovar ou recusar.
 6. **"Somente leitura":** aparece em um link do design, mas o modal Gerar link não tem esse campo. Por ora, `POST /links` cria com `readOnly: false`.

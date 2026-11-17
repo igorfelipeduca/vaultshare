@@ -8,6 +8,8 @@ export const pages = {
   search: () => import('./pages/Search'),
   notFound: () => import('./pages/NotFound'),
   login: () => import('./pages/Login'),
+  register: () => import('./pages/Register'),
+  sharedLink: () => import('./pages/SharedLink'),
   privacy: () => import('./pages/Privacy'),
 }
 

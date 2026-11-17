@@ -72,7 +72,19 @@ export interface SearchResults {
   people: Person[]
 }
 
+// What anyone holding a share link sees, with no session. The owner is never exposed.
+export interface SharedLink {
+  fileName: string
+  fileType: FileType
+  sizeBytes: number
+  expiresAt: string | null
+  hasPassword: boolean
+  readOnly: boolean
+  hasContent: boolean
+}
+
 const BASE_URL = import.meta.env.VITE_API_URL ?? '/api/v1'
+const NETWORK_ERROR = 'Sem conexão com o servidor. Verifique sua internet e tente novamente.'
 
 // Fired on any 401 so the app can send the user to the login screen.
 export const UNAUTHORIZED_EVENT = 'vaultshare:unauthorized'
@@ -106,7 +118,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   try {
     response = await fetch(BASE_URL + path, { method, headers, body: payload, credentials: 'include' })
   } catch {
-    throw new ApiError(0, 'NETWORK_ERROR', 'Sem conexão com o servidor. Verifique sua internet e tente novamente.')
+    throw new ApiError(0, 'NETWORK_ERROR', NETWORK_ERROR)
   }
 
   if (response.status === 204) return undefined as T
@@ -125,6 +137,10 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
 // POST /auth/login
 export const login = (email: string, password: string) => request<User>('POST', '/auth/login', { email, password })
+
+// POST /auth/register
+export const register = (input: { name: string; email: string; password: string }) =>
+  request<User>('POST', '/auth/register', input)
 
 // POST /auth/logout
 export const logout = () => request<void>('POST', '/auth/logout')
@@ -170,6 +186,33 @@ export const getLinks = () => request<ShareLink[]>('GET', '/links')
 // POST /links
 export const createLink = (input: { fileId: string; expiresInDays: number | null; password: string | null }) =>
   request<ShareLink>('POST', '/links', input)
+
+// GET /public/links/:slug
+export const getSharedLink = (slug: string) => request<SharedLink>('GET', `/public/links/${encodeURIComponent(slug)}`)
+
+// POST /public/links/:slug/download: returns the decrypted file so the caller can save or show it.
+export async function downloadSharedFile(slug: string, password: string | null) {
+  let response: Response
+  try {
+    response = await fetch(`${BASE_URL}/public/links/${encodeURIComponent(slug)}/download`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'VaultShare' },
+      body: JSON.stringify({ password }),
+    })
+  } catch {
+    throw new ApiError(0, 'NETWORK_ERROR', NETWORK_ERROR)
+  }
+  if (!response.ok) {
+    const data = await response.json().catch(() => null)
+    throw new ApiError(
+      response.status,
+      data?.code ?? 'UNKNOWN_ERROR',
+      data?.message ?? 'Não foi possível abrir o arquivo.',
+      data?.fields,
+    )
+  }
+  return response.blob()
+}
 
 // GET /search?q=
 export const search = (query: string) => request<SearchResults>('GET', `/search?q=${encodeURIComponent(query.trim())}`)

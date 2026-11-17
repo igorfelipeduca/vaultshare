@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { eventText, fileMeta, formatBytes, initials, linkRules, relativeTime } from '../src/format.ts'
+import { eventText, fileMeta, formatBytes, initials, linkRules, relativeTime, sharedLinkMeta } from '../src/format.ts'
 
 const now = Date.UTC(2026, 0, 15)
 const ago = (ms: number) => new Date(now - ms).toISOString()
@@ -55,6 +55,23 @@ test('linkRules lists only the active rules', () => {
     '1 acesso',
   ])
   assert.deepEqual(labels(base), ['Acesso livre'])
+})
+
+test('sharedLinkMeta shows type, size and expiry only when set', () => {
+  const link = {
+    fileName: 'a.pdf',
+    fileType: 'PDF',
+    sizeBytes: 2_400_000,
+    expiresAt: null,
+    hasPassword: false,
+    readOnly: false,
+    hasContent: true,
+  }
+  assert.equal(sharedLinkMeta(link, now), 'PDF · 2,4 MB')
+  assert.equal(
+    sharedLinkMeta({ ...link, expiresAt: new Date(now + 2 * DAY).toISOString() }, now),
+    'PDF · 2,4 MB · Expira em 2 dias',
+  )
 })
 
 test('eventText builds each sentence', () => {

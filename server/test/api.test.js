@@ -440,3 +440,101 @@ describe('LGPD', () => {
     assert.equal((await api(bia, 'GET', '/files')).json().length, 1)
   })
 })
+
+describe('cadastro', () => {
+  const register = (payload) =>
+    app.inject({ method: 'POST', url: '/api/v1/auth/register', headers: writeHeaders, payload })
+
+  test('cria a conta e já inicia a sessão', async () => {
+    const response = await register({ name: ' Carla Dias ', email: 'carla@empresa.com', password: 'senha-nova-1' })
+    assert.equal(response.statusCode, 201, response.body)
+    assert.deepEqual(Object.keys(response.json()).sort(), ['email', 'id', 'name', 'plan'])
+    assert.equal(response.json().name, 'Carla Dias')
+
+    const cookie = response.cookies.find((c) => c.name === 'vs_session')
+    const me = await api(`vs_session=${cookie.value}`, 'GET', '/me')
+    assert.equal(me.json().email, 'carla@empresa.com')
+    assert.equal(db.prepare('SELECT password_hash FROM users').get().password_hash.startsWith('$argon2id$'), true)
+  })
+
+  test('recusa e-mail já cadastrado, sem diferenciar maiúsculas', async () => {
+    createUser('ana@empresa.com')
+    const response = await register({ name: 'Ana', email: 'ANA@empresa.com', password: 'senha-nova-1' })
+    assert.equal(response.statusCode, 409)
+    assert.ok(response.json().fields.email)
+  })
+
+  test('valida nome, e-mail e tamanho da senha', async () => {
+    const response = await register({ name: ' ', email: 'nao-e-email', password: 'curta' })
+    assert.equal(response.statusCode, 400)
+    const { fields } = response.json()
+    assert.ok(fields.name && fields.email && fields.password)
+  })
+})
+
+describe('link público', () => {
+  async function shareUpload({ password = null, expiresInDays = 7 } = {}) {
+    createUser('ana@empresa.com', { requirePassword: 0 })
+    const cookie = await login('ana@empresa.com')
+    const file = (await upload(cookie, 'relatorio.pdf', PDF_BYTES)).json()
+    const link = (await api(cookie, 'POST', '/links', { fileId: file.id, expiresInDays, password })).json()
+    return { cookie, slug: link.url.split('/s/')[1], linkId: link.id }
+  }
+
+  const download = (slug, payload = {}) =>
+    app.inject({ method: 'POST', url: `/api/v1/public/links/${slug}/download`, headers: writeHeaders, payload })
+
+  test('mostra os dados do link sem sessão e sem expor o dono', async () => {
+    const { slug } = await shareUpload({ password: 'segredo123' })
+    const response = await app.inject({ method: 'GET', url: `/api/v1/public/links/${slug}` })
+    assert.equal(response.statusCode, 200, response.body)
+    assert.deepEqual(response.json(), {
+      ...response.json(),
+      fileName: 'relatorio.pdf',
+      fileType: 'PDF',
+      sizeBytes: PDF_BYTES.length,
+      hasPassword: true,
+      hasContent: true,
+    })
+    assert.equal(/ana@|userId|hash|storage/i.test(response.body), false)
+  })
+
+  test('entrega o arquivo decifrado só com a senha certa e registra o acesso', async () => {
+    const { cookie, slug } = await shareUpload({ password: 'segredo123' })
+    assert.equal((await download(slug)).statusCode, 400)
+    const wrong = await download(slug, { password: 'errada' })
+    assert.equal(wrong.statusCode, 400)
+    assert.ok(wrong.json().fields.password)
+
+    const ok = await download(slug, { password: 'segredo123' })
+    assert.equal(ok.statusCode, 200)
+    assert.deepEqual(ok.rawPayload, PDF_BYTES)
+    assert.match(ok.headers['content-disposition'], /^attachment; filename\*=UTF-8''relatorio\.pdf$/)
+
+    const [link] = (await api(cookie, 'GET', '/links')).json()
+    assert.equal(link.accessCount, 1)
+    const [event] = (await api(cookie, 'GET', '/activity?limit=1')).json()
+    assert.equal(event.type, 'file_accessed')
+    assert.equal(event.actor, 'Alguém com o link')
+  })
+
+  test('link expirado, inexistente ou malformado responde 404', async () => {
+    const { slug, linkId } = await shareUpload()
+    db.prepare('UPDATE links SET expires_at = ? WHERE id = ?').run(new Date(Date.now() - 1000).toISOString(), linkId)
+    for (const candidate of [slug, 'A'.repeat(22), '..%2F..%2Fetc']) {
+      assert.equal((await app.inject({ method: 'GET', url: `/api/v1/public/links/${candidate}` })).statusCode, 404)
+      assert.equal((await download(candidate)).statusCode, 404)
+    }
+  })
+
+  test('arquivo criado sem conteúdo não tem o que baixar', async () => {
+    createUser('ana@empresa.com', { requirePassword: 0 })
+    const cookie = await login('ana@empresa.com')
+    const file = (await api(cookie, 'POST', '/files', { name: 'vazio', type: 'PDF' })).json()
+    const link = (await api(cookie, 'POST', '/links', { fileId: file.id, expiresInDays: null, password: null })).json()
+    const slug = link.url.split('/s/')[1]
+    const info = await app.inject({ method: 'GET', url: `/api/v1/public/links/${slug}` })
+    assert.equal(info.json().hasContent, false)
+    assert.equal((await download(slug)).statusCode, 404)
+  })
+})

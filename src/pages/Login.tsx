@@ -69,6 +69,9 @@ export default function Login() {
         >
           Entrar
         </SubmitButton>
+        <p className="login-switch">
+          Não tem conta? <Link to="/cadastro">Criar conta</Link>
+        </p>
         <p className="login-legal">
           Usamos apenas um cookie essencial para manter você conectado, sem rastreamento nem publicidade.{' '}
           <Link to="/privacidade">Política de privacidade</Link>

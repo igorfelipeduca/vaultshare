@@ -10,6 +10,7 @@ import accountRoutes from './routes/account.js'
 import authRoutes from './routes/auth.js'
 import fileRoutes from './routes/files.js'
 import linkRoutes from './routes/links.js'
+import publicRoutes from './routes/public.js'
 import searchRoutes from './routes/search.js'
 
 export const API_PREFIX = '/api/v1'
@@ -52,6 +53,7 @@ export async function buildApp({ config, db, logger }) {
       await api.register(fileRoutes, deps)
       await api.register(linkRoutes, deps)
       await api.register(searchRoutes, deps)
+      await api.register(publicRoutes, deps)
     },
     { prefix: API_PREFIX },
   )

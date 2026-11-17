@@ -17,6 +17,8 @@ const Search = lazy(pages.search)
 const NotFound = lazy(pages.notFound)
 const Login = lazy(pages.login)
 const Privacy = lazy(pages.privacy)
+const Register = lazy(pages.register)
+const SharedLink = lazy(pages.sharedLink)
 
 const root = document.getElementById('root')
 if (!root) throw new Error('Elemento #root não encontrado em index.html')
@@ -29,6 +31,8 @@ createRoot(root).render(
           <Routes>
             <Route path="login" element={<Login />} />
             <Route path="privacidade" element={<Privacy />} />
+            <Route path="cadastro" element={<Register />} />
+            <Route path="s/:slug" element={<SharedLink />} />
             <Route element={<AppShell />}>
               <Route index element={<Overview />} />
               <Route path="arquivos" element={<Files />} />

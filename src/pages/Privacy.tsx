@@ -64,7 +64,7 @@ export default function Privacy() {
             </li>
             <li>
               <strong>Links de compartilhamento:</strong> arquivo, validade, número de acessos e, se houver senha, só o
-              hash dela.
+              hash dela. Quem abre um link não é identificado: só registramos que houve um acesso.
             </li>
             <li>
               <strong>Histórico de atividade:</strong> envios, criação de links e acessos aos seus arquivos.
