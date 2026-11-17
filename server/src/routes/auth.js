@@ -24,7 +24,9 @@ export default async function authRoutes(app, { db, sessions }) {
           max: 5,
           timeWindow: '1 minute',
           hook: 'preHandler',
-          keyGenerator: (request) => `${request.ip}:${String(request.body?.email ?? '').toLowerCase()}`,
+          // Keyed on the account only: behind the Vercel proxy request.ip is a rotating edge address,
+          // so an IP-based key would give each guess a fresh budget.
+          keyGenerator: (request) => String(request.body?.email ?? '').trim().toLowerCase(),
         },
       },
     },

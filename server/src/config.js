@@ -19,6 +19,12 @@ const schema = z.object({
   LOG_LEVEL: z.string().default('info'),
 })
 
+// An origin with "*" (e.g. https://vaultshare-*-team.vercel.app) becomes a RegExp where "*" matches
+// a single DNS label fragment: letters, digits and hyphens, never "." or "/".
+const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const toOriginMatcher = (origin) =>
+  origin.includes('*') ? new RegExp(`^${origin.split('*').map(escapeRegExp).join('[a-z0-9-]+')}$`) : origin
+
 export function loadConfig(env = process.env) {
   const parsed = schema.parse(env)
   const isProduction = parsed.NODE_ENV === 'production'
@@ -44,7 +50,8 @@ export function loadConfig(env = process.env) {
     encryptionKey,
     corsOrigins: parsed.CORS_ORIGINS.split(',')
       .map((origin) => origin.trim())
-      .filter(Boolean),
+      .filter(Boolean)
+      .map(toOriginMatcher),
     publicLinkHost: parsed.PUBLIC_LINK_HOST,
     maxUploadBytes: parsed.MAX_UPLOAD_BYTES,
     sessionTtlMs: parsed.SESSION_TTL_DAYS * 24 * 60 * 60 * 1000,

@@ -125,15 +125,16 @@ describe('autenticação', () => {
 
   test('limita tentativas de login', async () => {
     createUser('ana@empresa.com')
-    const attempt = () =>
+    const attempt = (remoteAddress, email = 'ana@empresa.com') =>
       app.inject({
         method: 'POST',
         url: '/api/v1/auth/login',
         headers: writeHeaders,
-        payload: { email: 'ana@empresa.com', password: 'errada' },
+        remoteAddress,
+        payload: { email, password: 'errada' },
       })
-    for (let i = 0; i < 5; i++) assert.equal((await attempt()).statusCode, 401)
-    assert.equal((await attempt()).statusCode, 429)
+    for (let i = 0; i < 5; i++) assert.equal((await attempt(`10.0.0.${i}`)).statusCode, 401)
+    assert.equal((await attempt('10.0.0.99', ' ANA@empresa.com ')).statusCode, 429)
   })
 
   test('logout invalida a sessão no servidor', async () => {
@@ -176,6 +177,22 @@ describe('CSRF', () => {
       payload: { name: 'x', type: 'PDF' },
     })
     assert.equal(response.statusCode, 403)
+  })
+
+  test('origem com curinga aceita só um trecho de subdomínio', async () => {
+    const config = loadConfig({ NODE_ENV: 'test', CORS_ORIGINS: 'https://vaultshare-*-time.vercel.app' })
+    const wildcardApp = await buildApp({ config, db, logger: false })
+    const loginFrom = (origin) =>
+      wildcardApp.inject({
+        method: 'POST',
+        url: '/api/v1/auth/login',
+        headers: { origin, 'x-requested-with': 'VaultShare' },
+        payload: { email: 'ninguem@empresa.com', password: 'errada' },
+      })
+    assert.equal((await loginFrom('https://vaultshare-git-main-time.vercel.app')).statusCode, 401)
+    assert.equal((await loginFrom('https://vaultshare-a.evil.com/x-time.vercel.app')).statusCode, 403)
+    assert.equal((await loginFrom('https://vaultshare-x-time.vercel.app.evil.com')).statusCode, 403)
+    await wildcardApp.close()
   })
 })
 

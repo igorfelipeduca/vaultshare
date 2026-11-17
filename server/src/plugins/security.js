@@ -12,11 +12,12 @@ export const sessionCookieName = (config) => (config.isProduction ? '__Host-vs_s
 // 2. a custom header on every write, which a cross-site form cannot send and cross-site fetch cannot send without CORS approval;
 // 3. Origin / Sec-Fetch-Site checks when the browser provides them.
 export function csrfGuard(config) {
-  const allowed = new Set(config.corsOrigins)
+  const isAllowed = (origin) =>
+    config.corsOrigins.some((allowed) => (typeof allowed === 'string' ? allowed === origin : allowed.test(origin)))
   return async (request) => {
     if (SAFE_METHODS.has(request.method)) return
     const origin = request.headers.origin
-    if (origin && !allowed.has(origin)) throw forbidden('Origem não permitida.')
+    if (origin && !isAllowed(origin)) throw forbidden('Origem não permitida.')
     if (request.headers['sec-fetch-site'] === 'cross-site') throw forbidden('Origem não permitida.')
     if (request.headers[CSRF_HEADER] !== CSRF_VALUE) throw forbidden('Requisição sem o cabeçalho de segurança.')
   }
