@@ -11,7 +11,10 @@ const SECTIONS = [
   { id: 'seguranca', title: 'Como protegemos' },
   { id: 'retencao', title: 'Por quanto tempo guardamos' },
   { id: 'compartilhamento', title: 'Com quem compartilhamos' },
+  { id: 'transferencia', title: 'Transferência internacional' },
   { id: 'direitos', title: 'Seus direitos' },
+  { id: 'incidentes', title: 'Incidentes de segurança' },
+  { id: 'alteracoes', title: 'Mudanças nesta política' },
   { id: 'contato', title: 'Contato do encarregado' },
 ]
 
@@ -67,13 +70,30 @@ export default function Privacy() {
               hash dela.
             </li>
             <li>
-              <strong>Histórico de atividade:</strong> envios, criação de links e acessos aos seus arquivos.
+              <strong>Histórico de atividade:</strong> envios, criação de links e acessos aos seus arquivos, com o nome
+              ou e-mail de quem acessou ou pediu acesso.
+            </li>
+            <li>
+              <strong>Contatos:</strong> nome e e-mail das pessoas com quem você compartilha arquivos, usados só para a
+              busca da sua conta.
+            </li>
+            <li>
+              <strong>Sessões:</strong> data de início e de expiração de cada login. Guardamos só um resumo
+              criptográfico do identificador da sessão.
             </li>
             <li>
               <strong>Registros técnicos:</strong> endereço IP, data e hora das requisições, usados para segurança.
             </li>
           </ul>
-          <p>Não coletamos dados sensíveis de propósito nem tratamos dados para publicidade ou criação de perfil.</p>
+          <p>
+            Não coletamos dados sensíveis de propósito nem tratamos dados para publicidade ou criação de perfil. O
+            conteúdo dos arquivos é seu: só o tratamos para guardar e entregar a quem você compartilhar.
+          </p>
+          <p>
+            Se você cadastrar dados de outras pessoas (contatos, destinatários de links ou arquivos com dados pessoais),
+            é responsável por ter uma base legal para isso. Essas pessoas podem exercer os direitos delas pelo contato
+            do encarregado.
+          </p>
         </section>
 
         <section id="finalidades" aria-labelledby="finalidades-title">
@@ -90,6 +110,10 @@ export default function Privacy() {
             <li>
               <strong>Guardar registros de acesso</strong> pelo prazo exigido pelo Marco Civil da Internet: cumprimento
               de obrigação legal, art. 7º, II.
+            </li>
+            <li>
+              <strong>Avisar sobre acessos aos seus arquivos</strong>, quando você liga essa opção: execução de
+              contrato, art. 7º, V.
             </li>
           </ul>
         </section>
@@ -116,16 +140,28 @@ export default function Privacy() {
             <li>Links com identificador aleatório de 128 bits, impossível de adivinhar.</li>
             <li>Conexão protegida, sessão em cookie inacessível a scripts e proteção contra requisições forjadas.</li>
             <li>Cada conta só enxerga os próprios dados.</li>
+            <li>
+              Trocar a senha desconecta os outros dispositivos, e você pode encerrar as outras sessões a qualquer
+              momento em <Link to="/configuracoes">Configurações → Segurança</Link>.
+            </li>
           </ul>
         </section>
 
         <section id="retencao" aria-labelledby="retencao-title">
           <h2 id="retencao-title">Por quanto tempo guardamos</h2>
-          <p>
-            Seus dados ficam guardados enquanto sua conta existir. Ao excluir a conta, apagamos na hora o cadastro, os
-            arquivos, os links e o histórico. Só os registros técnicos de acesso podem ser mantidos pelo prazo que a lei
-            exige.
-          </p>
+          <ul>
+            <li>
+              <strong>Cadastro, arquivos, links, contatos e histórico:</strong> enquanto sua conta existir. Ao excluir a
+              conta, apagamos tudo na hora, inclusive os arquivos criptografados.
+            </li>
+            <li>
+              <strong>Sessões:</strong> até 7 dias, ou até você sair, trocar a senha ou encerrar as outras sessões.
+            </li>
+            <li>
+              <strong>Registros técnicos de acesso:</strong> {LEGAL.accessLogMonths} meses, como exige o art. 15 do
+              Marco Civil da Internet (Lei nº 12.965/2014). Depois disso, são apagados.
+            </li>
+          </ul>
         </section>
 
         <section id="compartilhamento" aria-labelledby="compartilhamento-title">
@@ -134,6 +170,24 @@ export default function Privacy() {
             Não vendemos nem alugamos seus dados. Eles só chegam a quem você mesmo compartilhar por link e aos
             fornecedores de infraestrutura que hospedam o serviço, sob contrato e apenas para essa finalidade. Também
             podemos fornecê-los a autoridades quando houver ordem judicial ou obrigação legal.
+          </p>
+          <p>Fornecedores que tratam dados em nosso nome (operadores):</p>
+          <ul>
+            {LEGAL.processors.map((processor) => (
+              <li key={processor.name}>
+                <strong>{processor.name}:</strong> {processor.role} ({processor.country}).
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section id="transferencia" aria-labelledby="transferencia-title">
+          <h2 id="transferencia-title">Transferência internacional</h2>
+          <p>
+            Parte dos fornecedores acima mantém servidores fora do Brasil, então seus dados podem ser guardados no
+            exterior. Essa transferência é feita para executar o contrato com você e com garantias contratuais de
+            proteção equivalentes às da LGPD, conforme o art. 33 e a regulamentação da ANPD. Os arquivos ficam
+            criptografados também lá.
           </p>
         </section>
 
@@ -153,7 +207,14 @@ export default function Privacy() {
               <Link to="/configuracoes#seus-dados">Configurações → Seus dados → Excluir conta</Link>.
             </li>
             <li>
-              <strong>Pedir informações, se opor a um tratamento ou revisar uma decisão:</strong> pelo contato abaixo.
+              <strong>Saber com quem compartilhamos seus dados:</strong> veja{' '}
+              <a href="#compartilhamento">Com quem compartilhamos</a>.
+            </li>
+            <li>
+              <strong>
+                Pedir anonimização, bloqueio ou informações, se opor a um tratamento ou revisar uma decisão:
+              </strong>{' '}
+              pelo contato abaixo.
             </li>
             <li>
               <strong>Reclamar à ANPD</strong> (Autoridade Nacional de Proteção de Dados), em{' '}
@@ -163,6 +224,23 @@ export default function Privacy() {
               .
             </li>
           </ul>
+        </section>
+
+        <section id="incidentes" aria-labelledby="incidentes-title">
+          <h2 id="incidentes-title">Incidentes de segurança</h2>
+          <p>
+            Se acontecer um incidente que possa trazer risco ou dano a você, avisamos você e a ANPD em prazo razoável,
+            explicando o que aconteceu, quais dados foram afetados e o que estamos fazendo, como prevê o art. 48 da
+            LGPD.
+          </p>
+        </section>
+
+        <section id="alteracoes" aria-labelledby="alteracoes-title">
+          <h2 id="alteracoes-title">Mudanças nesta política</h2>
+          <p>
+            Quando esta política mudar, atualizamos a data no topo da página. Mudanças relevantes, como uma nova
+            finalidade ou um novo fornecedor, são avisadas na sua conta antes de valer.
+          </p>
         </section>
 
         <section id="contato" aria-labelledby="contato-title">

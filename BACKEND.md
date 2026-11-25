@@ -19,7 +19,7 @@ npm test
 - **Senhas** de contas e de links: argon2id.
 - **Links:** identificador aleatório de 128 bits (22 caracteres).
 - **Upload:** limite de 100 MB por arquivo (`MAX_UPLOAD_BYTES`). O tipo vem da extensão e é conferido pela assinatura do conteúdo (PDF, PNG, JPG, GIF, ZIP/DOCX/XLSX/PPTX). O arquivo é salvo com nome aleatório e cifrado com AES-256-GCM (`ENCRYPTION_KEY`).
-- **Limites de taxa:** 5 tentativas de login por minuto por IP e e-mail; 300 requisições por minuto por IP no geral. Excedeu, `429` com `code: "TOO_MANY_REQUESTS"`.
+- **Limites de taxa:** 5 tentativas de login por minuto por IP e e-mail; 5 por minuto em `PUT /me/password` e `DELETE /me`; 300 requisições por minuto por IP no geral. Excedeu, `429` com `code: "TOO_MANY_REQUESTS"`.
 - **Busca:** ignora maiúsculas e acentos ("reuniao" encontra "Reunião"), até 20 resultados por grupo.
 - **Front:** a tela `/login` usa `POST /auth/login`; o botão de sair no cabeçalho usa `POST /auth/logout`; qualquer `401` leva ao login e volta para a página original.
 
@@ -50,25 +50,27 @@ Todo erro usa o status HTTP adequado e este corpo. O front mostra `message` dire
 
 ## Resumo das rotas
 
-| Método   | Rota             | Usada em                                                 |
-| -------- | ---------------- | -------------------------------------------------------- |
-| `POST`   | `/auth/login`    | Sem tela ainda (ver [pendências](#pendências-do-design)) |
-| `POST`   | `/auth/logout`   | Sem tela ainda                                           |
-| `GET`    | `/me`            | Cabeçalho (nome, iniciais, plano), Configurações         |
-| `PATCH`  | `/me`            | Configurações: Salvar alterações                         |
-| `GET`    | `/me/settings`   | Configurações, modal Gerar link                          |
-| `PUT`    | `/me/settings`   | Configurações: Salvar alterações                         |
-| `GET`    | `/overview`      | Visão geral: 4 cards de métricas                         |
-| `GET`    | `/activity`      | Visão geral (`limit=4`), Atividade                       |
-| `GET`    | `/notifications` | Sino do cabeçalho                                        |
-| `GET`    | `/files`         | Meus arquivos, modal Gerar link                          |
-| `POST`   | `/files`         | Modal Criar arquivo                                      |
-| `POST`   | `/files/upload`  | Visão geral: Enviar arquivo                              |
-| `GET`    | `/links`         | Links compartilhados                                     |
-| `POST`   | `/links`         | Modal Gerar link                                         |
-| `GET`    | `/search`        | Campo de busca do cabeçalho                              |
-| `GET`    | `/me/export`     | Configurações → Seus dados → Baixar (LGPD)               |
-| `DELETE` | `/me`            | Configurações → Seus dados → Excluir conta (LGPD)        |
+| Método   | Rota             | Usada em                                            |
+| -------- | ---------------- | --------------------------------------------------- |
+| `POST`   | `/auth/login`    | Tela `/login`                                       |
+| `POST`   | `/auth/logout`   | Botão Sair no cabeçalho                             |
+| `GET`    | `/me`            | Cabeçalho (nome, iniciais, plano), Configurações    |
+| `PATCH`  | `/me`            | Configurações: Salvar alterações                    |
+| `GET`    | `/me/settings`   | Configurações, modal Gerar link                     |
+| `PUT`    | `/me/settings`   | Configurações: Salvar alterações                    |
+| `PUT`    | `/me/password`   | Configurações → Segurança → Alterar senha           |
+| `DELETE` | `/me/sessions`   | Configurações → Segurança → Encerrar outras sessões |
+| `GET`    | `/overview`      | Visão geral: 4 cards de métricas                    |
+| `GET`    | `/activity`      | Visão geral (`limit=4`), Atividade                  |
+| `GET`    | `/notifications` | Sino do cabeçalho                                   |
+| `GET`    | `/files`         | Meus arquivos, modal Gerar link                     |
+| `POST`   | `/files`         | Modal Criar arquivo                                 |
+| `POST`   | `/files/upload`  | Visão geral: Enviar arquivo                         |
+| `GET`    | `/links`         | Links compartilhados                                |
+| `POST`   | `/links`         | Modal Gerar link                                    |
+| `GET`    | `/search`        | Campo de busca do cabeçalho                         |
+| `GET`    | `/me/export`     | Configurações → Seus dados → Baixar (LGPD)          |
+| `DELETE` | `/me`            | Configurações → Seus dados → Excluir conta (LGPD)   |
 
 ## Modelos
 
@@ -177,6 +179,18 @@ O back manda o evento estruturado e o front monta a frase. `type`, `actor` e `fi
 Recebe o `UserSettings` completo. `200` com o valor salvo.
 
 O botão "Salvar alterações" chama `PATCH /me` e `PUT /me/settings` juntos. Para usar uma rota só, basta juntar as duas chamadas em `SettingsForm` (`src/pages.tsx`).
+
+### `PUT /me/password`
+
+```json
+{ "currentPassword": "...", "newPassword": "..." }
+```
+
+`204`. `newPassword` com 8 a 128 caracteres, diferente da atual e do e-mail. Senha atual errada responde `400` com `fields.currentPassword` (não `401`, para o front não confundir com sessão expirada). Encerra todas as outras sessões da conta e mantém a atual. Limitado a 5 tentativas por minuto.
+
+### `DELETE /me/sessions`
+
+`200` com `{ "ended": 2 }`: encerra todas as sessões da conta, menos a atual.
 
 ## Visão geral
 

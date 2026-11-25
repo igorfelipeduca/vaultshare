@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { deleteAccount } from '../api'
 import { Dialog } from '../components/Dialog'
 import { Field } from '../components/Field'
+import { PasswordInput } from '../components/PasswordInput'
 
 // LGPD art. 18, VI. Asks for the password again so a session left open on a shared computer cannot erase the account.
 export function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
@@ -30,14 +31,7 @@ export function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
     >
       <Field label="Confirme com sua senha">
         {(control) => (
-          <input
-            {...control}
-            name="password"
-            type="password"
-            className="input"
-            required
-            autoComplete="current-password"
-          />
+          <PasswordInput {...control} name="password" required maxLength={1024} autoComplete="current-password" />
         )}
       </Field>
     </Dialog>

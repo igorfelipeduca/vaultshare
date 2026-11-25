@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { eventText, fileMeta, formatBytes, initials, linkRules, relativeTime } from '../src/format.ts'
+import {
+  endedSessionsText,
+  eventText,
+  fileMeta,
+  formatBytes,
+  initials,
+  linkRules,
+  relativeTime,
+} from '../src/format.ts'
 
 const now = Date.UTC(2026, 0, 15)
 const ago = (ms: number) => new Date(now - ms).toISOString()
@@ -68,4 +76,10 @@ test('initials handles one, many and no names', () => {
   assert.equal(initials('Marina de Souza Costa'), 'MC')
   assert.equal(initials('marina'), 'M')
   assert.equal(initials('  '), '?')
+})
+
+test('endedSessionsText handles none, one and many', () => {
+  assert.equal(endedSessionsText(0), 'Nenhuma outra sessão estava aberta.')
+  assert.equal(endedSessionsText(1), '1 outra sessão foi encerrada.')
+  assert.equal(endedSessionsText(3), '3 outras sessões foram encerradas.')
 })

@@ -20,7 +20,8 @@ export function DataSection() {
       anchor.href = url
       anchor.download = 'vaultshare-meus-dados.json'
       anchor.click()
-      URL.revokeObjectURL(url)
+      // Revoking right away can cancel the download in some browsers.
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
       notify('Arquivo com seus dados baixado.')
     } catch (cause) {
       notify(cause instanceof ApiError ? cause.message : 'Não foi possível baixar seus dados.', 'error')

@@ -7,6 +7,7 @@ import { StatusMessage } from '../../components/StatusMessage'
 import { AccountForm } from './AccountForm'
 import { AppearanceSection } from './AppearanceSection'
 import { DataSection } from './DataSection'
+import { SecuritySection } from './SecuritySection'
 
 export default function SettingsPage() {
   const { user } = useApp()
@@ -28,6 +29,7 @@ export default function SettingsPage() {
         <StatusMessage error={settings.error} lines={4} />
       )}
       <div className="settings">
+        <SecuritySection />
         <AppearanceSection />
         <DataSection />
       </div>

@@ -423,3 +423,63 @@ describe('LGPD', () => {
     assert.equal((await api(bia, 'GET', '/files')).json().length, 1)
   })
 })
+
+describe('segurança da conta', () => {
+  test('trocar a senha exige a atual e encerra as outras sessões', async () => {
+    createUser('ana@empresa.com')
+    const current = await login('ana@empresa.com')
+    const other = await login('ana@empresa.com')
+
+    const wrong = await api(current, 'PUT', '/me/password', {
+      currentPassword: 'errada',
+      newPassword: 'nova-senha-456',
+    })
+    assert.equal(wrong.statusCode, 400)
+    assert.ok(wrong.json().fields.currentPassword)
+
+    const short = await api(current, 'PUT', '/me/password', { currentPassword: PASSWORD, newPassword: 'curta' })
+    assert.equal(short.statusCode, 400)
+    assert.ok(short.json().fields.newPassword)
+
+    const same = await api(current, 'PUT', '/me/password', { currentPassword: PASSWORD, newPassword: PASSWORD })
+    assert.equal(same.statusCode, 400)
+
+    const ok = await api(current, 'PUT', '/me/password', { currentPassword: PASSWORD, newPassword: 'nova-senha-456' })
+    assert.equal(ok.statusCode, 204)
+    assert.equal((await api(current, 'GET', '/me')).statusCode, 200)
+    assert.equal((await api(other, 'GET', '/me')).statusCode, 401)
+
+    const oldLogin = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      headers: writeHeaders,
+      payload: { email: 'ana@empresa.com', password: PASSWORD },
+    })
+    assert.equal(oldLogin.statusCode, 401)
+  })
+
+  test('recusa o e-mail como nova senha', async () => {
+    createUser('ana.costa@empresa.com')
+    const cookie = await login('ana.costa@empresa.com')
+    const response = await api(cookie, 'PUT', '/me/password', {
+      currentPassword: PASSWORD,
+      newPassword: 'Ana.Costa@empresa.com',
+    })
+    assert.equal(response.statusCode, 400)
+  })
+
+  test('encerra as outras sessões e mantém a atual', async () => {
+    createUser('ana@empresa.com')
+    createUser('bia@empresa.com')
+    const current = await login('ana@empresa.com')
+    const other = await login('ana@empresa.com')
+    const bia = await login('bia@empresa.com')
+
+    const response = await api(current, 'DELETE', '/me/sessions')
+    assert.equal(response.statusCode, 200)
+    assert.deepEqual(response.json(), { ended: 1 })
+    assert.equal((await api(current, 'GET', '/me')).statusCode, 200)
+    assert.equal((await api(other, 'GET', '/me')).statusCode, 401)
+    assert.equal((await api(bia, 'GET', '/me')).statusCode, 200)
+  })
+})

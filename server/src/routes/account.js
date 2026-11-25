@@ -1,7 +1,7 @@
 import { rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { z } from 'zod'
-import { verifyPassword } from '../lib/crypto.js'
+import { hashPassword, verifyPassword } from '../lib/crypto.js'
 import { badRequest, conflict } from '../lib/errors.js'
 import { toEvent, toFile, toLink, toPerson, toSettings, toUser } from '../lib/serializers.js'
 
@@ -26,6 +26,17 @@ const activityQuery = z.object({
 
 const deleteBody = z.object({
   password: z.string({ error: 'Confirme com sua senha.' }).min(1, 'Confirme com sua senha.').max(1024),
+})
+
+const passwordBody = z.object({
+  currentPassword: z
+    .string({ error: 'Informe a senha atual.' })
+    .min(1, 'Informe a senha atual.')
+    .max(1024, 'Senha longa demais.'),
+  newPassword: z
+    .string({ error: 'Informe a nova senha.' })
+    .min(8, 'Use pelo menos 8 caracteres.')
+    .max(128, 'Use no máximo 128 caracteres.'),
 })
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -55,6 +66,7 @@ export default async function accountRoutes(app, { db, config, sessions }) {
     exportContacts: db.prepare('SELECT * FROM contacts WHERE user_id = ? ORDER BY name'),
     activeSessions: db.prepare('SELECT COUNT(*) AS n FROM sessions WHERE user_id = ? AND expires_at > ?'),
     storageKeys: db.prepare('SELECT storage_key FROM files WHERE user_id = ? AND storage_key IS NOT NULL'),
+    updatePassword: db.prepare('UPDATE users SET password_hash = ? WHERE id = ?'),
     deleteUser: db.prepare('DELETE FROM users WHERE id = ?'),
     notifications: db.prepare(
       "SELECT * FROM events WHERE user_id = ? AND (? OR type <> 'file_accessed') ORDER BY created_at DESC LIMIT 5",
@@ -125,6 +137,26 @@ export default async function accountRoutes(app, { db, config, sessions }) {
     reply.header('Cache-Control', 'no-store')
     return data
   })
+
+  // Re-authenticates with the current password and signs out every other device, so whoever knew the old
+  // password loses access right away (LGPD art. 46: security measures).
+  app.put('/me/password', { config: { rateLimit: { max: 5, timeWindow: '1 minute' } } }, async (request, reply) => {
+    const { currentPassword, newPassword } = passwordBody.parse(request.body)
+    const user = request.user
+    if (!(await verifyPassword(user.password_hash, currentPassword)))
+      throw badRequest('Senha atual incorreta.', { currentPassword: 'Senha incorreta' })
+    if (newPassword === currentPassword)
+      throw badRequest('A nova senha precisa ser diferente da atual.', { newPassword: 'Igual à senha atual' })
+    if (newPassword.trim().toLowerCase() === user.email.toLowerCase())
+      throw badRequest('Não use seu e-mail como senha.', { newPassword: 'Igual ao seu e-mail' })
+
+    statements.updatePassword.run(await hashPassword(newPassword), user.id)
+    sessions.endOthers(request, user.id)
+    return reply.status(204).send()
+  })
+
+  // Ends the sessions of every other browser or device (e.g. a computer left signed in somewhere else).
+  app.delete('/me/sessions', async (request) => ({ ended: sessions.endOthers(request, request.user.id) }))
 
   // LGPD art. 18, VI: deletion. Re-authenticates with the password, removes every row (ON DELETE CASCADE)
   // and the encrypted files on disk, then ends the session.

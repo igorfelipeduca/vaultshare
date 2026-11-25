@@ -2324,3 +2324,57 @@ a.privacy:hover {
 .legal-toc ol {
   list-style: decimal;
 }
+
+/* Password field: show/hide toggle inside the input, plus the Caps Lock warning. */
+.password-input {
+  position: relative;
+}
+
+.password-input .input {
+  padding-right: 48px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  translate: 0 -50%;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.password-toggle:hover,
+.password-toggle[aria-pressed="true"] {
+  color: var(--text);
+}
+
+.password-toggle:hover {
+  background: var(--bg-hover);
+}
+
+.field-warning {
+  color: var(--amber);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+:root[data-motion="reduce"] .password-toggle {
+  transition: none;
+}
+
+.security-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}

@@ -54,6 +54,12 @@ export function linkRules(link: ShareLink, now = Date.now()) {
 
 export const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`
 
+// Toast after "Encerrar outras sessões".
+export function endedSessionsText(ended: number) {
+  if (ended === 0) return 'Nenhuma outra sessão estava aberta.'
+  return ended === 1 ? '1 outra sessão foi encerrada.' : `${ended} outras sessões foram encerradas.`
+}
+
 export function eventText({ type, actor, fileName }: ActivityEvent) {
   switch (type) {
     case 'file_accessed':

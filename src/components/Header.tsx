@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { FormEvent } from 'react'
 import { LogOut, Menu, Search } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { logout } from '../api'
+import { ApiError, logout } from '../api'
 import { useApp } from '../app/context'
 import { initials } from '../format'
 import { Notifications } from './Notifications'
@@ -11,7 +11,7 @@ import { ThemeToggle } from './ThemeToggle'
 export function Header() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const { user } = useApp()
+  const { user, notify } = useApp()
   const searchInput = useRef<HTMLInputElement>(null)
   const query = params.get('q') ?? ''
   const shortcut = /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘K' : 'Ctrl K'
@@ -34,12 +34,18 @@ export function Header() {
     if (q) navigate(`/buscar?q=${encodeURIComponent(q)}`)
   }
 
+  // Only leaves the app once the server has ended the session: on a network error the cookie would still be valid,
+  // and a person on a shared computer would believe they had signed out.
   const signOut = async () => {
     try {
       await logout()
-    } finally {
-      navigate('/login', { replace: true })
+    } catch (cause) {
+      if (!(cause instanceof ApiError && cause.status === 401)) {
+        notify('Não foi possível sair agora. Verifique sua conexão e tente novamente.', 'error')
+        return
+      }
     }
+    navigate('/login?saiu=1', { replace: true })
   }
 
   return (

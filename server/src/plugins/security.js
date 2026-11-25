@@ -41,6 +41,7 @@ export function createSessions(db, config) {
   )
   const deleteSession = db.prepare('DELETE FROM sessions WHERE token_hash = ?')
   const deleteExpired = db.prepare('DELETE FROM sessions WHERE expires_at <= ?')
+  const deleteOthers = db.prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash <> ?')
 
   return {
     // Only the SHA-256 of the token is stored: a leaked database does not leak live sessions.
@@ -57,6 +58,12 @@ export function createSessions(db, config) {
       const token = request.cookies[cookieName]
       if (token) deleteSession.run(sha256(token))
       reply.clearCookie(cookieName, cookieOptions)
+    },
+
+    // Signs out every other device of the user and keeps the current session. Returns how many were ended.
+    endOthers(request, userId) {
+      const token = request.cookies[cookieName] ?? ''
+      return Number(deleteOthers.run(userId, sha256(token)).changes)
     },
 
     // preHandler for every protected route: sets request.user or answers 401.

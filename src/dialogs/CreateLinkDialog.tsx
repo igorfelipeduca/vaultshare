@@ -4,6 +4,7 @@ import { createLink, getFiles, getSettings } from '../api'
 import { useApp, useData } from '../app/context'
 import { Dialog } from '../components/Dialog'
 import { Field } from '../components/Field'
+import { PasswordInput } from '../components/PasswordInput'
 import { Segmented } from '../components/Segmented'
 import { StatusMessage } from '../components/StatusMessage'
 
@@ -68,11 +69,9 @@ export function CreateLinkDialog({ fileId, onClose }: { fileId?: string; onClose
             }
           >
             {(control) => (
-              <input
+              <PasswordInput
                 {...control}
                 name="password"
-                type="password"
-                className="input"
                 required={passwordRequired}
                 minLength={8}
                 maxLength={128}

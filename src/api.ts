@@ -183,5 +183,12 @@ export async function exportMyData() {
   return response.blob()
 }
 
+// PUT /me/password: also signs out every other session.
+export const changePassword = (currentPassword: string, newPassword: string) =>
+  request<void>('PUT', '/me/password', { currentPassword, newPassword })
+
+// DELETE /me/sessions: signs out every session except the current one.
+export const endOtherSessions = () => request<{ ended: number }>('DELETE', '/me/sessions')
+
 // DELETE /me (LGPD art. 18, VI)
 export const deleteAccount = (password: string) => request<void>('DELETE', '/me', { password })

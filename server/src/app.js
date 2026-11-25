@@ -19,7 +19,14 @@ export async function buildApp({ config, db, logger }) {
     logger: logger ?? {
       level: config.logLevel,
       // Session cookies and anything password-like must never reach the logs.
-      redact: ['req.headers.cookie', 'req.headers.authorization', 'res.headers["set-cookie"]', '*.password'],
+      redact: [
+        'req.headers.cookie',
+        'req.headers.authorization',
+        'res.headers["set-cookie"]',
+        '*.password',
+        '*.currentPassword',
+        '*.newPassword',
+      ],
     },
     bodyLimit: 64 * 1024,
     trustProxy: config.isProduction,
